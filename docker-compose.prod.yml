@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: voice-airline-frontend-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - nlp-service
+    restart: always
+    environment:
+      - NODE_ENV=production
+    networks:
+      - voice-airline-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: voice-airline-backend-prod
+    ports:
+      - "4000:4000"
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    networks:
+      - voice-airline-network
+
+  nlp-service:
+    build:
+      context: ./nlp-service
+      dockerfile: Dockerfile
+    container_name: voice-airline-nlp-prod
+    ports:
+      - "5000:5000"
+    restart: always
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    networks:
+      - voice-airline-network
+
+networks:
+  voice-airline-network:
+    driver: bridge

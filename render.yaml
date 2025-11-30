@@ -1,0 +1,35 @@
+services:
+  # Frontend Service
+  - type: web
+    name: voice-airline-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # Backend Service
+  - type: web
+    name: voice-airline-backend
+    env: node
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+
+  # NLP Service
+  - type: web
+    name: voice-airline-nlp
+    env: python
+    buildCommand: cd nlp-service && pip install -r requirements.txt
+    startCommand: cd nlp-service && python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
