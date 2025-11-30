@@ -1,35 +1,37 @@
 services:
-  # Frontend Service
-  - type: web
-    name: voice-airline-frontend
-    env: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-
   # Backend Service
   - type: web
     name: voice-airline-backend
-    env: node
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && node server.js
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 4000
+        value: 10000
 
   # NLP Service
   - type: web
     name: voice-airline-nlp
-    env: python
-    buildCommand: cd nlp-service && pip install -r requirements.txt
-    startCommand: cd nlp-service && python app.py
+    env: docker
+    dockerfilePath: ./nlp-service/Dockerfile
+    dockerContext: ./nlp-service
     envVars:
       - key: FLASK_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
+
+  # Frontend Service
+  - type: web
+    name: voice-airline-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    dockerCommand: docker build --build-arg VITE_API_URL=https://voice-airline-backend.onrender.com/api --build-arg VITE_NLP_URL=https://voice-airline-nlp.onrender.com/api/nlp -t frontend .
+    envVars:
+      - key: VITE_API_URL
+        value: https://voice-airline-backend.onrender.com/api
+      - key: VITE_NLP_URL
+        value: https://voice-airline-nlp.onrender.com/api/nlp

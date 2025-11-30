@@ -9,10 +9,13 @@ const bookingRoutes = require('./routes/booking');
 const paymentRoutes = require('./routes/payment');
 
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['https://voice-airline-frontend.onrender.com', 'http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
