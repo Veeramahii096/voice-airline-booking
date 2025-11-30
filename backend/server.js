@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors({
-  origin: ['https://voice-airline-frontend.onrender.com', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: ['https://voice-airline-booking-1.onrender.com', 'https://voice-airline-frontend.onrender.com', 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json());

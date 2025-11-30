@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, origins=['https://voice-airline-frontend.onrender.com', 'http://localhost:5173', 'http://localhost:3000'])
+CORS(app, origins=['https://voice-airline-booking-1.onrender.com', 'https://voice-airline-frontend.onrender.com', 'http://localhost:5173', 'http://localhost:3000'])
 
 # Conversation sessions storage
 sessions = {}
