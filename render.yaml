@@ -2,10 +2,11 @@ services:
   # Backend Service
   - type: web
     name: voice-airline-backend
-    runtime: node
-    buildCommand: npm install
-    startCommand: node server.js
-    rootDir: backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -13,10 +14,11 @@ services:
   # NLP Service
   - type: web
     name: voice-airline-nlp
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    rootDir: nlp-service
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: cd nlp-service && pip install -r requirements.txt
+    startCommand: cd nlp-service && python app.py
     envVars:
       - key: FLASK_ENV
         value: production
@@ -24,10 +26,11 @@ services:
   # Frontend Service
   - type: web
     name: voice-airline-frontend
-    runtime: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    rootDir: frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
         value: https://voice-airline-backend.onrender.com/api
