@@ -2,35 +2,38 @@ services:
   # Backend Service
   - type: web
     name: voice-airline-backend
-    env: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    rootDir: backend
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
 
   # NLP Service
   - type: web
     name: voice-airline-nlp
-    env: docker
-    dockerfilePath: ./nlp-service/Dockerfile
-    dockerContext: ./nlp-service
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    rootDir: nlp-service
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: PORT
-        value: 10000
 
   # Frontend Service
   - type: web
     name: voice-airline-frontend
-    env: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    rootDir: frontend
     envVars:
       - key: VITE_API_URL
         value: https://voice-airline-backend.onrender.com/api
       - key: VITE_NLP_URL
         value: https://voice-airline-nlp.onrender.com/api/nlp
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
