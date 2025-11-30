@@ -29,7 +29,6 @@ services:
     env: docker
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
-    dockerCommand: docker build --build-arg VITE_API_URL=https://voice-airline-backend.onrender.com/api --build-arg VITE_NLP_URL=https://voice-airline-nlp.onrender.com/api/nlp -t frontend .
     envVars:
       - key: VITE_API_URL
         value: https://voice-airline-backend.onrender.com/api

@@ -3,7 +3,7 @@
  * Connects frontend to Python-based conversation manager
  */
 
-const NLP_API_BASE = import.meta.env.VITE_NLP_API_URL || 'http://localhost:5000';
+const NLP_API_BASE = import.meta.env.VITE_NLP_URL || 'http://localhost:5000/api/nlp';
 
 // Generate unique session ID
 const getSessionId = () => {
