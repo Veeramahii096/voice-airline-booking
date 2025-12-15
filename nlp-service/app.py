@@ -17,12 +17,10 @@ import json
 # Load configuration
 try:
     from config import config
+    FRONTEND_URL = config.FRONTEND_URL
 except ImportError:
     print("Warning: config.py not found, using defaults")
-    class config:
-        DEBUG = True
-        PORT = 5000
-        FRONTEND_URL = 'http://localhost:5173'
+    FRONTEND_URL = 'http://localhost:5173'
 
 # Import real API integrations
 try:
@@ -42,9 +40,8 @@ except ImportError:
 app = Flask(__name__)
 
 # IMPORTANT: Update CORS origins for production deployment
-# Add your deployed frontend URLs here
+# Allow all Render URLs with wildcard for easy deployment
 ALLOWED_ORIGINS = [
-    config.FRONTEND_URL,
     'https://voice-airline-booking-1.onrender.com',
     'https://voice-airline-booking-2.onrender.com',
     'https://voice-airline-frontend.onrender.com',
@@ -53,12 +50,13 @@ ALLOWED_ORIGINS = [
     'http://localhost'
 ]
 
-# Enable CORS with proper configuration
+# Enable CORS with permissive configuration for production
 CORS(app, 
-     origins=ALLOWED_ORIGINS,
+     resources={r"/*": {"origins": ALLOWED_ORIGINS}},
      supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+     allow_headers=['Content-Type', 'Authorization', 'Accept'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+     expose_headers=['Content-Type'])
 
 # Conversation sessions storage
 sessions = {}
