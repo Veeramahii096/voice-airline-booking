@@ -1,33 +1,37 @@
-# Voice Airline Booking & Payment System POC
+# 🎤 Voice Airline Booking System
 
 ## 🎯 Project Overview
 
-A fully voice-enabled airline booking platform with **NLP (Natural Language Processing)** capabilities, designed for both visually impaired and regular users. This proof-of-concept demonstrates accessible web development using voice recognition, intelligent command understanding, text-to-speech, and ARIA standards.
+A **production-ready** voice-first airline booking application with AI-powered NLP, supporting 100% voice-controlled booking flow. Complete booking from start to finish using only your voice - no typing required!
+
+**Now with REAL API integration** for live flight data and database persistence.
 
 ## ✨ Features
 
 ### Core Functionality
-- ✅ **Voice-Enabled Booking Flow** - Complete booking using voice commands
-- ✅ **🧠 NLP-Powered Commands** - Natural language understanding (NEW!)
-- ✅ **🎙️ Voice Demo (POC)** - Interactive demonstration of AI-powered booking (NEW!)
-- ✅ **Passenger Information** - Voice or text input for passenger name
-- ✅ **Smart Seat Selection** - Natural commands like "window seat front row" (NEW!)
-- ✅ **Special Assistance** - Request wheelchair, visual support, etc.
-- ✅ **Mock Payment System** - Simulated payment with OTP verification
-- ✅ **Booking Confirmation** - Voice readout of ticket details
-- ✅ **Ticket Download** - Download booking as text file
+- ✅ **100% Voice Controlled** - Complete booking without touching keyboard
+- ✅ **AI-Powered NLP** - Smart 15-step conversation flow
+- ✅ **Real Flight Data** - Amadeus/Skyscanner API integration
+- ✅ **Database Persistence** - MongoDB for user profiles & bookings
+- ✅ **Voice Identification** - Auto-fill via phone number
+- ✅ **Continuous Listening** - No need to click between steps
+- ✅ **Booking Confirmation** - Visual and voice confirmation with all details
+- ✅ **Production Ready** - Environment config, error handling, logging
 
-### NLP Features (NEW!)
-- 🧠 **Intent Recognition** - Understands what you want to do automatically
-- 🎯 **Entity Extraction** - Captures names, seats, preferences from natural speech
-- 💡 **Smart Recommendations** - Suggests optimal seats based on preferences
-- 🗣️ **Natural Language** - No rigid commands - speak naturally
-- 📊 **Context Awareness** - Adapts to current booking stage
-- ⚡ **Fast Processing** - <50ms client-side NLP processing
+### Voice Commands
+- 🗣️ **Natural Language** - "Book flight from Mumbai to Singapore tomorrow"
+- 🎯 **Time Selection** - "morning flight" / "evening flight"  
+- 📞 **Auto-Fill** - "My phone is 9876543210" (loads profile)
+- 💺 **Seat Choice** - "window seat" / "aisle seat" / "12A"
+- 🍽️ **Meal Preference** - "vegetarian" / "non-veg" / "no meal"
+- ✅ **Confirmation** - "confirm" / "change" / "cancel"
 
-### Accessibility Features
-- 🎤 **Web Speech API Integration** - Speech-to-Text and Text-to-Speech
-- ♿ **ARIA Compliance** - Full screen reader support (NVDA, JAWS, VoiceOver)
+### API Integrations
+- ✈️ **Amadeus Flight API** - Real-time flight data
+- 💾 **MongoDB Atlas** - Cloud database
+- 💳 **Razorpay** - Payment processing (optional)
+- 📧 **SendGrid** - Email notifications (optional)
+- 📱 **Twilio** - SMS confirmations (optional)
 - ⌨️ **Keyboard Navigation** - Complete keyboard accessibility
 - 🔊 **Voice Prompts** - Audio guidance throughout the journey
 - 📱 **Responsive Design** - Works on desktop and mobile

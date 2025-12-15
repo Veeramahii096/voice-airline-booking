@@ -277,6 +277,29 @@
   border-radius: 15px;
 }
 
+/* Flight card selected highlight and pulse */
+.flight-card {
+  background: #ffffff11;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 14px;
+  border-radius: 10px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.flight-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+.flight-card.selected {
+  border-color: rgba(46,204,113,0.6);
+  background: rgba(46,204,113,0.05);
+  box-shadow: 0 10px 30px rgba(46,204,113,0.08);
+}
+.flight-card.pulse {
+  animation: flight-pulse 1.2s ease-in-out infinite;
+}
+@keyframes flight-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
 .flight-info p {
   font-size: 18px;
   margin: 15px 0;

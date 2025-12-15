@@ -10,9 +10,15 @@ const useSpeechRecognition = () => {
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [error, setError] = useState(null);
+  const [status, setStatus] = useState(null);
   const [isSupported, setIsSupported] = useState(false);
 
   const recognitionRef = useRef(null);
+  const retryRef = useRef(0);
+  const restartTimerRef = useRef(null);
+  const lastRestartAtRef = useRef(0);
+  const persistentRef = useRef(false); // when true, keep auto-restarting until explicitly disabled
+  const manualRestartRef = useRef(false); // when true, prevent onend auto-restart
 
   useEffect(() => {
     // Check if browser supports Speech Recognition
@@ -37,6 +43,8 @@ const useSpeechRecognition = () => {
       console.log('Voice recognition started');
       setIsListening(true);
       setError(null);
+      setStatus('listening');
+      retryRef.current = 0;
     };
 
     recognition.onresult = (event) => {
@@ -55,81 +63,189 @@ const useSpeechRecognition = () => {
       setInterimTranscript(interim);
       if (final) {
         setTranscript(prev => (prev + final).trim());
+        // successful final result — clear retry counter and status
+        retryRef.current = 0;
+        setStatus(null);
       }
     };
-
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      
-      // Handle no-speech error gracefully
+
       if (event.error === 'no-speech') {
-        console.log('No speech detected, will retry...');
-        setError('No speech detected. Please speak clearly.');
+        // If persistent mode is enabled, keep restarting indefinitely
+        if (persistentRef.current) {
+          console.log('No speech detected but persistent mode is ON — restarting immediately');
+          setStatus('No speech detected — waiting for your voice.');
+          clearTimeout(restartTimerRef.current);
+          restartTimerRef.current = setTimeout(() => {
+            lastRestartAtRef.current = Date.now();
+            if (recognitionRef.current && isListening) {
+              try {
+                recognitionRef.current.start();
+                console.log('🔄 Restarted recognition (persistent mode)');
+              } catch (e) {
+                console.log('Recognition restart failed', e.message);
+              }
+            }
+          }, 500);
+          return;
+        }
+
+        retryRef.current = (retryRef.current || 0) + 1;
+        console.log(`No speech detected (attempt ${retryRef.current})`);
+
+        if (retryRef.current <= 3) {
+          setStatus('No speech detected — please speak now.');
+          // throttle rapid restarts
+          const now = Date.now();
+          const since = now - (lastRestartAtRef.current || 0);
+          const cooldown = since < 700 ? 700 - since : 0;
+          clearTimeout(restartTimerRef.current);
+          restartTimerRef.current = setTimeout(() => {
+            lastRestartAtRef.current = Date.now();
+            if (recognitionRef.current && isListening) {
+              try {
+                recognitionRef.current.start();
+                console.log('🔄 Restarted recognition after no-speech');
+              } catch (e) {
+                console.log('Recognition restart failed', e.message);
+              }
+            }
+          }, cooldown || 700);
+        } else {
+          // After several attempts, stop auto-restarting and prompt user
+          setStatus('I still did not hear you — please check your microphone or click to retry.');
+          setIsListening(false);
+          try { recognitionRef.current.stop(); } catch (e) { /* ignore */ }
+        }
+
+        return;
       } else if (event.error === 'not-allowed') {
         setError('Microphone access denied. Please allow microphone access.');
+        setIsListening(false);
+        setStatus(null);
+      } else if (event.error === 'aborted') {
+        console.log('Recognition aborted (normal during restart)');
+        return;
       } else {
-        setError(`Error: ${event.error}`);
+        console.log(`Recognition error: ${event.error}, will retry...`);
+        clearTimeout(restartTimerRef.current);
+        restartTimerRef.current = setTimeout(() => {
+          if (recognitionRef.current && isListening) {
+            try {
+              recognitionRef.current.start();
+            } catch (e) {
+              console.log('Could not restart after error');
+            }
+          }
+        }, 1000);
       }
-      
-      setIsListening(false);
     };
 
     recognition.onend = () => {
       console.log('Voice recognition ended');
-      setIsListening(false);
+      // Check if manual restart is in progress - if so, don't auto-restart
+      if (manualRestartRef.current) {
+        console.log('⏭️ Manual restart in progress, skipping onend auto-restart');
+        setInterimTranscript('');
+        return;
+      }
+      // Auto-restart if still supposed to be listening and retry limit not reached
+      if (isListening) {
+        console.log('🔄 Recognition ended but should continue - considering restart...');
+        // If persistent mode, always restart
+        if (persistentRef.current) {
+          setTimeout(() => {
+            if (recognitionRef.current && isListening && !manualRestartRef.current) {
+              try {
+                recognitionRef.current.start();
+                console.log('✅ Auto-restart successful (persistent mode)');
+              } catch (e) {
+                console.log('⚠️ Could not auto-restart (persistent):', e.message);
+              }
+            }
+          }, 300);
+        } else {
+          const attempts = retryRef.current || 0;
+          if (attempts < 3) {
+            setTimeout(() => {
+              if (recognitionRef.current && isListening && !manualRestartRef.current) {
+                try {
+                  recognitionRef.current.start();
+                  console.log('✅ Auto-restart successful');
+                } catch (e) {
+                  console.log('⚠️ Could not auto-restart:', e.message);
+                }
+              }
+            }, 500);
+          } else {
+            console.log('Max no-speech retries reached; not auto-restarting.');
+          }
+        }
+      }
       setInterimTranscript('');
     };
 
     recognitionRef.current = recognition;
 
     return () => {
+      clearTimeout(restartTimerRef.current);
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try { recognitionRef.current.stop(); } catch (e) {}
       }
     };
   }, []);
 
   const startListening = () => {
     if (recognitionRef.current) {
-      // Stop any existing recognition first
-      if (isListening) {
-        console.log('⚠️ Already listening, stopping first...');
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          console.log('Stop error (ignored):', e);
-        }
-      }
-      
       setTranscript('');
       setInterimTranscript('');
       setError(null);
+      setStatus('listening');
+      retryRef.current = 0;
       
-      // Small delay to ensure clean start
-      setTimeout(() => {
-        try {
-          console.log('🎤 Calling recognition.start()...');
-          recognitionRef.current.start();
-          console.log('✅ Recognition.start() called successfully');
-        } catch (error) {
-          console.error('❌ Error starting recognition:', error);
-          // If already started, that's okay
-          if (error.message && error.message.includes('already started')) {
-            console.log('Recognition already active, continuing...');
-          } else {
-            setError('Failed to start voice recognition: ' + error.message);
-          }
+      try {
+        console.log('🎤 Calling recognition.start()...');
+        recognitionRef.current.start();
+        console.log('✅ Recognition.start() called successfully');
+        setIsListening(true);
+        // reset retry counter when explicitly starting
+        retryRef.current = 0;
+      } catch (error) {
+        console.error('❌ Error starting recognition:', error);
+        // If already started, set state to listening anyway
+        if (error.message && error.message.includes('already started')) {
+          console.log('✅ Recognition already active, setting state');
+          setIsListening(true);
+        } else {
+          setError('Failed to start voice recognition: ' + error.message);
         }
-      }, 100);
+      }
     } else {
       console.error('❌ Recognition ref is null!');
       setError('Voice recognition not initialized');
     }
   };
 
+  const enablePersistentListening = () => {
+    persistentRef.current = true;
+    console.log('Persistent listening ENABLED');
+  };
+
+  const disablePersistentListening = () => {
+    persistentRef.current = false;
+    console.log('Persistent listening DISABLED');
+  };
+
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      // Set state immediately before attempting stop
+      setIsListening(false);
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
     }
   };
 
@@ -147,6 +263,8 @@ const useSpeechRecognition = () => {
     startListening,
     stopListening,
     resetTranscript,
+    enablePersistentListening,
+    disablePersistentListening,
   };
 };
 

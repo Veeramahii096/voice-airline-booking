@@ -1,0 +1,42 @@
+# Voice Airline Booking - Production Deployment
+
+node_modules/
+dist/
+build/
+*.log
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Local development files
+user_profiles.json
+*.sqlite
+*.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker volumes
+data/
+volumes/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Testing
+coverage/
+.coverage
+
+# Build artifacts
+frontend/dist/
+frontend/build/
+backend/dist/
