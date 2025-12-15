@@ -46,6 +46,7 @@ app = Flask(__name__)
 ALLOWED_ORIGINS = [
     config.FRONTEND_URL,
     'https://voice-airline-booking-1.onrender.com',
+    'https://voice-airline-booking-2.onrender.com',
     'https://voice-airline-frontend.onrender.com',
     'http://localhost:5173',
     'http://localhost:3000',
