@@ -53,7 +53,12 @@ ALLOWED_ORIGINS = [
     'http://localhost'
 ]
 
-CORS(app, origins=ALLOWED_ORIGINS)
+# Enable CORS with proper configuration
+CORS(app, 
+     origins=ALLOWED_ORIGINS,
+     supports_credentials=True,
+     allow_headers=['Content-Type', 'Authorization'],
+     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
 # Conversation sessions storage
 sessions = {}
