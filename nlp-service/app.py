@@ -14,41 +14,10 @@ import hashlib
 import requests
 import json
 
-# Load configuration
-try:
-    from config import config
-    FRONTEND_URL = config.FRONTEND_URL
-except ImportError:
-    print("Warning: config.py not found, using defaults")
-    FRONTEND_URL = 'http://localhost:5173'
-
-# Import real API integrations
-try:
-    from flight_api import get_real_flights
-    USE_REAL_FLIGHT_API = True
-except ImportError:
-    USE_REAL_FLIGHT_API = False
-    print("Warning: flight_api module not available, using fallback data")
-
-try:
-    from database import user_db, booking_db
-    USE_DATABASE = True
-except ImportError:
-    USE_DATABASE = False
-    print("Warning: database module not available, using in-memory storage")
-
 app = Flask(__name__)
 
-# CORS Configuration - Allow all origins for now (restrict in production)
-# Using wildcard to allow any Render deployment URL
-CORS(app, 
-     resources={r"/api/*": {
-         "origins": "*",
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "allow_headers": ["Content-Type", "Authorization", "Accept"],
-         "expose_headers": ["Content-Type"],
-         "supports_credentials": False
-     }})
+# CORS Configuration - Allow all origins
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Conversation sessions storage
 sessions = {}
@@ -873,39 +842,24 @@ def identify_user():
 
 @app.route('/api/flights', methods=['GET', 'POST'])
 def flights_lookup():
-    """Real flights lookup endpoint using external API (Amadeus/Skyscanner).
-    Accepts JSON body or query params: origin, destination, date, class, passengers
-    Returns real flight data from API or fallback mock data.
+    """Flight lookup using existing FLIGHTS_DB mock data.
+    Accepts JSON body or query params: origin, destination, date, class
     """
     data = request.get_json(silent=True) or request.args or {}
     origin = (data.get('origin') or data.get('from') or data.get('o') or '').strip()
     destination = (data.get('destination') or data.get('to') or data.get('d') or '').strip()
     travel_date = data.get('date') or data.get('travel_date') or None
-    cls = (data.get('class') or data.get('c') or 'Economy').strip()
-    passengers = int(data.get('passengers', 1))
+    cls = data.get('class') or data.get('c') or None
 
     if not origin or not destination:
         return jsonify({'error': 'origin and destination are required'}), 400
 
-    # Try to get real flights from API
-    flights = []
-    if USE_REAL_FLIGHT_API and travel_date:
-        try:
-            # Convert city names to IATA codes (you'd want a proper mapping)
-            origin_code = _get_iata_code(origin)
-            dest_code = _get_iata_code(destination)
-            flights = get_real_flights(origin_code, dest_code, travel_date, passengers, cls.upper())
-        except Exception as e:
-            print(f"Error fetching real flights: {e}")
-    
-    # Fallback to mock data if API fails or unavailable
-    if not flights:
-        route = f"{origin.lower()}-{destination.lower()}"
-        flights = FLIGHTS_DB.get(route, [])
-        if cls:
-            flights = [f for f in flights if f.get('class', '').lower() == cls.lower()]
+    route = f"{origin.lower()}-{destination.lower()}"
+    flights = FLIGHTS_DB.get(route, [])
+    if cls:
+        flights = [f for f in flights if f.get('class', '').lower() == cls.lower()]
 
-    return jsonify({'route': f"{origin}-{destination}", 'date': travel_date, 'flights': flights, 'source': 'api' if USE_REAL_FLIGHT_API else 'mock'})
+    return jsonify({'route': route, 'date': travel_date, 'flights': flights})
 
 
 @app.route('/api/nlp/process', methods=['POST'])
@@ -917,13 +871,8 @@ def process_voice_input():
     user_id = data.get('user_id', None)  # From voice identification
     
     # Get user profile if identified
-    # Get user profile from database if identified
-    user_profile = None
-    if user_id:
-        if USE_DATABASE:
-            user_profile = user_db.get_user_by_phone(user_id)
-        else:
-            user_profile = USER_PROFILES.get(user_id)
+    # Get user profile from in-memory storage
+    user_profile = USER_PROFILES.get(user_id) if user_id else None
     
     # Get or create session with user profile
     if session_id not in sessions:
@@ -974,28 +923,10 @@ def save_user_profile():
 @app.route('/api/nlp/profile/<user_id>', methods=['GET'])
 def get_user_profile(user_id):
     """Return a saved user profile by user_id (for debugging/UI)."""
-    # Try database first
-    profile = None
-    if USE_DATABASE:
-        profile = user_db.get_user_by_phone(user_id)
-    else:
-        profile = USER_PROFILES.get(user_id)
-    
+    profile = USER_PROFILES.get(user_id)
     if profile:
         return jsonify({'found': True, 'user_id': user_id, 'profile': profile})
     return jsonify({'found': False, 'message': 'user not found'}), 404
-
-
-def _get_iata_code(city_name: str) -> str:
-    """Convert city name to IATA airport code"""
-    # Common city to IATA code mappings
-    iata_codes = {
-        'mumbai': 'BOM', 'delhi': 'DEL', 'bangalore': 'BLR', 'kolkata': 'CCU',
-        'chennai': 'MAA', 'hyderabad': 'HYD', 'pune': 'PNQ', 'ahmedabad': 'AMD',
-        'singapore': 'SIN', 'london': 'LHR', 'new york': 'JFK', 'dubai': 'DXB',
-        'bangkok': 'BKK', 'hong kong': 'HKG', 'tokyo': 'NRT', 'paris': 'CDG'
-    }
-    return iata_codes.get(city_name.lower(), city_name.upper()[:3])
 
 
 @app.route('/api/nlp/reset', methods=['POST'])

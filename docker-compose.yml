@@ -33,8 +33,9 @@ services:
       - "5000:5000"
     environment:
       - FLASK_ENV=production
-    volumes:
-      - ./nlp-service/user_profiles.json:/app/user_profiles.json
+      - AMADEUS_API_KEY=xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS
+      - AMADEUS_API_SECRET=I8l5uhG8lKFYson0
+      - DATABASE_URL=mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/airline
     networks:
       - voice-airline-network
     healthcheck:
