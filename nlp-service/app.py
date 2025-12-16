@@ -14,10 +14,37 @@ import hashlib
 import requests
 import json
 
+# Import real API and database modules
+try:
+    from config import has_amadeus_config, has_mongodb_config, validate_config
+    from flight_api import flight_api
+    from database import db
+    from nlp_engine import nlp_engine
+    USE_REAL_APIS = has_amadeus_config()
+    USE_DATABASE = has_mongodb_config()
+    USE_REAL_NLP = nlp_engine.nlp is not None
+except ImportError as e:
+    print(f"⚠️  Could not import production modules: {e}")
+    USE_REAL_APIS = False
+    USE_DATABASE = False
+    USE_REAL_NLP = False
+
 app = Flask(__name__)
 
 # CORS Configuration - Allow all origins
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Validate configuration on startup
+if USE_REAL_APIS or USE_DATABASE:
+    print("\n🚀 PRODUCTION MODE")
+    validate_config()
+else:
+    print("\n🔧 DEVELOPMENT MODE - Using mock data")
+
+if USE_REAL_NLP:
+    print("✓ Using spaCy NLP engine for intent classification and entity extraction")
+else:
+    print("⚠️  Using basic pattern matching for NLP")
 
 # Conversation sessions storage
 sessions = {}
@@ -374,11 +401,24 @@ class ConversationManager:
             return {'response': 'Your booking is complete! Have a great flight!', 'intent': 'complete', 'advance': False, 'auto_listen': False}
     
     def _extract_complete_booking(self, user_input):
-        """Extract origin, destination, date from single command"""
+        """Extract origin, destination, date from single command using real NLP"""
         # Examples: "book flight from mumbai to singapore tomorrow"
         #           "I want to fly delhi to london next friday"
         #           "fly bangalore dubai on 15th december"
         
+        # Use spaCy NLP engine if available
+        if USE_REAL_NLP:
+            details = nlp_engine.extract_flight_details(user_input)
+            if details.get('origin') and details.get('destination'):
+                return {
+                    'origin': details['origin'].title(),
+                    'destination': details['destination'].title(),
+                    'date': details.get('date'),
+                    'class': details.get('class'),
+                    'passengers': details.get('passengers', 1)
+                }
+        
+        # Fallback to regex-based extraction
         origin = None
         destination = None
         date = None
@@ -451,11 +491,33 @@ class ConversationManager:
         }
     
     def _match_intent(self, user_input, keywords):
-        """Check if user input matches any keyword"""
+        """Check if user input matches any keyword using NLP or regex"""
+        if USE_REAL_NLP:
+            intent = nlp_engine.classify_intent(user_input)
+            # Map NLP intent to keyword groups
+            intent_mapping = {
+                'confirm': ['yes', 'confirm', 'okay', 'proceed'],
+                'reject': ['no', 'cancel', 'stop'],
+                'greeting': ['hello', 'hi', 'hey'],
+                'start_booking': ['start', 'book', 'booking'],
+                'cancel_booking': ['cancel', 'stop', 'exit', 'quit']
+            }
+            for nlp_intent, intent_keywords in intent_mapping.items():
+                if intent == nlp_intent and any(kw in keywords for kw in intent_keywords):
+                    return True
+        
+        # Fallback to simple keyword matching
         return any(keyword in user_input for keyword in keywords)
     
     def _extract_city(self, user_input):
-        """Extract city name from input"""
+        """Extract city name from input using NLP or regex"""
+        if USE_REAL_NLP:
+            entities = nlp_engine.extract_entities(user_input)
+            locations = entities.get('locations', [])
+            if locations:
+                return locations[0].title()
+        
+        # Fallback to keyword matching
         cities = ['mumbai', 'delhi', 'bangalore', 'chennai', 'kolkata', 'hyderabad', 'pune', 'singapore', 'london', 'dubai', 'new york', 'tokyo', 'paris', 'sydney']
         cleaned = re.sub(r'\b(from|to|flying|going)\b', '', user_input, flags=re.IGNORECASE).strip()
         for city in cities:
@@ -467,7 +529,17 @@ class ConversationManager:
         return None
     
     def _extract_date(self, user_input):
-        """Extract travel date from input"""
+        """Extract travel date from input using NLP or regex"""
+        if USE_REAL_NLP:
+            entities = nlp_engine.extract_entities(user_input)
+            if entities.get('parsed_date'):
+                return entities['parsed_date']
+            if entities.get('dates'):
+                # Let NLP engine parse the date text
+                from nlp_engine import nlp_engine as ne
+                return ne._parse_date(entities['dates'][0])
+        
+        # Fallback to simple pattern matching
         if 'today' in user_input:
             return datetime.now().strftime('%Y-%m-%d')
         elif 'tomorrow' in user_input:
@@ -864,7 +936,7 @@ def identify_user():
 
 @app.route('/api/flights', methods=['GET', 'POST'])
 def flights_lookup():
-    """Flight lookup using existing FLIGHTS_DB mock data.
+    """Flight lookup - uses real Amadeus API if configured, otherwise mock data.
     Accepts JSON body or query params: origin, destination, date, class
     """
     data = request.get_json(silent=True) or request.args or {}
@@ -876,12 +948,56 @@ def flights_lookup():
     if not origin or not destination:
         return jsonify({'error': 'origin and destination are required'}), 400
 
+    # Try to use real Amadeus API if configured
+    if USE_REAL_APIS:
+        try:
+            # Get IATA codes
+            origin_code = flight_api.get_airport_code(origin)
+            dest_code = flight_api.get_airport_code(destination)
+            
+            if origin_code and dest_code:
+                # Use provided date or default to tomorrow
+                search_date = travel_date or (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                
+                print(f"🔍 Searching Amadeus: {origin_code} → {dest_code} on {search_date}")
+                flights = flight_api.search_flights(origin_code, dest_code, search_date)
+                
+                if flights:
+                    # Save search to database
+                    if USE_DATABASE:
+                        user_phone = data.get('user_phone')
+                        if user_phone:
+                            db.save_search(user_phone, {
+                                'origin': origin,
+                                'destination': destination,
+                                'date': search_date,
+                                'results_count': len(flights)
+                            })
+                    
+                    print(f"✓ Found {len(flights)} real flights from Amadeus")
+                    return jsonify({
+                        'route': f"{origin}-{destination}",
+                        'date': search_date,
+                        'flights': flights,
+                        'source': 'amadeus'
+                    })
+            else:
+                print(f"⚠️  Could not map cities to IATA codes: {origin} → {destination}")
+        except Exception as e:
+            print(f"⚠️  Amadeus API error: {e}, falling back to mock data")
+    
+    # Fallback to mock FLIGHTS_DB
     route = f"{origin.lower()}-{destination.lower()}"
     flights = FLIGHTS_DB.get(route, [])
     if cls:
         flights = [f for f in flights if f.get('class', '').lower() == cls.lower()]
 
-    return jsonify({'route': route, 'date': travel_date, 'flights': flights})
+    return jsonify({
+        'route': route,
+        'date': travel_date,
+        'flights': flights,
+        'source': 'mock'
+    })
 
 
 @app.route('/api/nlp/process', methods=['POST'])
@@ -892,9 +1008,22 @@ def process_voice_input():
     session_id = data.get('session_id', 'default')
     user_id = data.get('user_id', None)  # From voice identification
     
-    # Get user profile if identified
-    # Get user profile from in-memory storage
-    user_profile = USER_PROFILES.get(user_id) if user_id else None
+    # Get user profile from database if available, otherwise use in-memory
+    user_profile = None
+    if user_id and USE_DATABASE:
+        # Try to get from database
+        db_profile = db.get_user_profile(user_id)
+        if db_profile:
+            user_profile = {
+                'name': db_profile.get('name'),
+                'email': db_profile.get('email'),
+                'phone': db_profile.get('phone'),
+                'preferences': db_profile.get('preferred_seat', {}),
+                'history': db_profile.get('frequent_routes', [])
+            }
+    elif user_id:
+        # Fallback to in-memory storage
+        user_profile = USER_PROFILES.get(user_id)
     
     # Get or create session with user profile
     if session_id not in sessions:
@@ -916,13 +1045,51 @@ def save_user_profile():
     if session_id in sessions:
         conversation = sessions[session_id]
         context = conversation.context
+        phone = context.get('phone')
         
-        # Create/update user profile
-        user_id = f"user_{hashlib.md5(context['phone'].encode()).hexdigest()[:10]}"
+        if not phone:
+            return jsonify({'error': 'Phone number required'}), 400
+        
+        # Save to database if available
+        if USE_DATABASE:
+            # Check if user exists
+            existing_user = db.get_user_profile(phone)
+            
+            if existing_user:
+                # Update existing profile
+                updates = {
+                    'preferred_seat': context.get('seat_preference'),
+                    'last_booking': datetime.utcnow()
+                }
+                db.update_user_profile(phone, updates)
+            else:
+                # Create new profile
+                db.create_user_profile(
+                    phone_number=phone,
+                    name=context.get('passenger_name'),
+                    voice_signature=None
+                )
+            
+            # Save booking to database
+            booking_data = {
+                'flight_number': context.get('flight_number'),
+                'origin': context.get('origin'),
+                'destination': context.get('destination'),
+                'departure_time': context.get('departure_time'),
+                'seat': context.get('seat_preference'),
+                'meal': context.get('meal_preference'),
+                'price': context.get('price')
+            }
+            booking = db.create_booking(phone, booking_data)
+            if booking:
+                print(f"✓ Booking saved to database: {booking.get('booking_id')}")
+        
+        # Also save to in-memory for backward compatibility
+        user_id = f"user_{hashlib.md5(phone.encode()).hexdigest()[:10]}"
         USER_PROFILES[user_id] = {
             'name': context['passenger_name'],
             'email': context['email'],
-            'phone': context['phone'],
+            'phone': phone,
             'preferences': {
                 'seat': context['seat_preference'],
                 'meal': context['meal_preference'],

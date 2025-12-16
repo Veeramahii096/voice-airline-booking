@@ -13,21 +13,21 @@ services:
 
   # NLP Service
   - type: web
-    name: voice-airline-nlp
+    name: voice-airline-nlp-new
     env: python
     region: oregon
     plan: free
-    buildCommand: cd nlp-service && pip install -r requirements.txt
+    buildCommand: cd nlp-service && pip install -r requirements.txt && python -m spacy download en_core_web_sm
     startCommand: cd nlp-service && gunicorn --bind 0.0.0.0:$PORT --workers 2 app:app
     envVars:
       - key: FLASK_ENV
         value: production
       - key: AMADEUS_API_KEY
-        sync: false
+        value: xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS
       - key: AMADEUS_API_SECRET
-        sync: false
-      - key: DATABASE_URL
-        sync: false
+        value: XlLMkdQIFtb5x0W4
+      - key: MONGODB_URL
+        value: mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority
 
   # Frontend Service
   - type: web
@@ -41,7 +41,7 @@ services:
       - key: VITE_API_URL
         value: https://voice-airline-backend.onrender.com/api
       - key: VITE_NLP_URL
-        value: https://voice-airline-nlp.onrender.com/api/nlp
+        value: https://voice-airline-nlp-new.onrender.com/api/nlp
     routes:
       - type: rewrite
         source: /*
