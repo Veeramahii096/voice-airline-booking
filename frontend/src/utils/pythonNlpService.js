@@ -3,6 +3,8 @@
  * Connects frontend to Python-based conversation manager
  */
 
+import nlpService from './nlpService.js';
+
 const NLP_API_BASE = import.meta.env.VITE_NLP_URL || 'http://localhost:5000/api/nlp';
 
 // Generate unique session ID
@@ -79,13 +81,20 @@ export const processVoiceInput = async (userInput) => {
     return result;
   } catch (error) {
     console.error('Python NLP service error:', error);
+    console.log('Using fallback client-side NLP processing...');
+    
     // Fallback to client-side NLP if Python service unavailable
+    const fallbackResult = nlpService.processInput(userInput, 'general');
+    
+    // Transform client-side NLP result to match Python NLP service response format
     return {
-      response: 'NLP service temporarily unavailable. Using fallback processing.',
-      intent: 'error',
-      advance: false,
+      response: fallbackResult.response,
+      intent: fallbackResult.intent,
+      entities: fallbackResult.entities,
+      confidence: fallbackResult.confidence,
+      action: fallbackResult.action,
+      advance: fallbackResult.action?.type !== 'NONE',
       auto_listen: true,
-      error: error.message,
     };
   }
 };
