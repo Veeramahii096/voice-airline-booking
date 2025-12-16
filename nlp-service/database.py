@@ -6,16 +6,18 @@ import os
 from typing import Dict, Optional
 from datetime import datetime
 
-# For MongoDB (using pymongo)
+# For MongoDB (using pymongo) - HARDCODED for production
 try:
     from pymongo import MongoClient
     USE_MONGODB = True
-    client = MongoClient(os.getenv('DATABASE_URL', 'mongodb://localhost:27017/'))
+    MONGODB_URL = os.getenv('DATABASE_URL', 'mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority')
+    client = MongoClient(MONGODB_URL)
     db = client['airline_booking']
+    print(f"✓ Connected to MongoDB Atlas")
 except ImportError:
     USE_MONGODB = False
     db = None
-    print("MongoDB not available, using in-memory storage")
+    print("⚠️  MongoDB not available, using in-memory storage")
 
 class UserDatabase:
     """Handle user profile storage and retrieval"""

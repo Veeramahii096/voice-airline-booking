@@ -9,7 +9,9 @@ from datetime import datetime
 
 class FlightAPIClient:
     def __init__(self):
-        self.api_key = os.getenv('FLIGHT_API_KEY', '')
+        # HARDCODED credentials for production
+        self.api_key = os.getenv('AMADEUS_API_KEY', 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS')
+        self.api_secret = os.getenv('AMADEUS_API_SECRET', 'XlLMkdQIFtb5x0W4')
         self.api_url = os.getenv('FLIGHT_API_URL', 'https://api.amadeus.com/v2')
         self.access_token = None
         
@@ -21,8 +23,8 @@ class FlightAPIClient:
                 auth_url,
                 data={
                     'grant_type': 'client_credentials',
-                    'client_id': os.getenv('AMADEUS_API_KEY', ''),
-                    'client_secret': os.getenv('AMADEUS_API_SECRET', '')
+                    'client_id': self.api_key,
+                    'client_secret': self.api_secret
                 }
             )
             if response.status_code == 200:

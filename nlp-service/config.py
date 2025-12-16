@@ -16,12 +16,12 @@ class Config:
     BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:4000')
     FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
     
-    # Database
-    DATABASE_URL = os.getenv('DATABASE_URL', '')
+    # Database - HARDCODED MongoDB for production
+    DATABASE_URL = os.getenv('DATABASE_URL', 'mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority')
     
-    # Flight API
-    AMADEUS_API_KEY = os.getenv('AMADEUS_API_KEY', '')
-    AMADEUS_API_SECRET = os.getenv('AMADEUS_API_SECRET', '')
+    # Flight API - HARDCODED for production
+    AMADEUS_API_KEY = os.getenv('AMADEUS_API_KEY', 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS')
+    AMADEUS_API_SECRET = os.getenv('AMADEUS_API_SECRET', 'XlLMkdQIFtb5x0W4')
     FLIGHT_API_URL = os.getenv('FLIGHT_API_URL', 'https://api.amadeus.com/v2')
     
     # Payment Gateway
