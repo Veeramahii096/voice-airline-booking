@@ -145,7 +145,7 @@ export const getConversationStatus = async () => {
  */
 export const checkNLPHealth = async () => {
   try {
-    const response = await fetch('http://localhost:5000/health');
+    const response = await fetch(`${NLP_API_BASE.replace('/api/nlp', '')}/health`);
     return response.ok;
   } catch (error) {
     return false;

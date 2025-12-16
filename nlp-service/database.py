@@ -9,11 +9,19 @@ from datetime import datetime
 # For MongoDB (using pymongo) - HARDCODED for production
 try:
     from pymongo import MongoClient
-    USE_MONGODB = True
     MONGODB_URL = os.getenv('DATABASE_URL', 'mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority')
-    client = MongoClient(MONGODB_URL)
-    db = client['airline_booking']
-    print(f"✓ Connected to MongoDB Atlas")
+    try:
+        client = MongoClient(MONGODB_URL, serverSelectionTimeoutMS=2000, connectTimeoutMS=2000)
+        # Test connection
+        client.admin.command('ping')
+        db = client['airline_booking']
+        USE_MONGODB = True
+        print(f"✓ Connected to MongoDB Atlas")
+    except Exception as e:
+        print(f"⚠️  MongoDB connection failed: {e}")
+        print("⚠️  Using in-memory storage")
+        USE_MONGODB = False
+        db = None
 except ImportError:
     USE_MONGODB = False
     db = None

@@ -11,27 +11,33 @@ class FlightAPIClient:
     def __init__(self):
         # HARDCODED credentials for production
         self.api_key = os.getenv('AMADEUS_API_KEY', 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS')
-        self.api_secret = os.getenv('AMADEUS_API_SECRET', 'XlLMkdQIFtb5x0W4')
-        self.api_url = os.getenv('FLIGHT_API_URL', 'https://api.amadeus.com/v2')
+        self.api_secret = os.getenv('AMADEUS_API_SECRET', 'I8l5uhG8lKFYson0')
+        self.api_url = os.getenv('FLIGHT_API_URL', 'https://test.api.amadeus.com/v2')
         self.access_token = None
         
     def authenticate(self):
         """Get OAuth access token for Amadeus API"""
         try:
-            auth_url = "https://api.amadeus.com/v1/security/oauth2/token"
+            auth_url = "https://test.api.amadeus.com/v1/security/oauth2/token"
+            print(f"🔐 Authenticating with Amadeus (key={self.api_key[:8]}...)", flush=True)
             response = requests.post(
                 auth_url,
                 data={
                     'grant_type': 'client_credentials',
                     'client_id': self.api_key,
                     'client_secret': self.api_secret
-                }
+                },
+                timeout=10
             )
+            print(f"🔑 Auth response: {response.status_code}", flush=True)
             if response.status_code == 200:
                 self.access_token = response.json()['access_token']
+                print(f"✓ Got access token", flush=True)
                 return True
+            else:
+                print(f"❌ Auth failed: {response.text[:300]}", flush=True)
         except Exception as e:
-            print(f"Authentication error: {e}")
+            print(f"❌ Authentication error: {e}", flush=True)
         return False
     
     def search_flights(
@@ -55,9 +61,14 @@ class FlightAPIClient:
         Returns:
             List of flight offers
         """
+        print(f"📞 Calling search_flights: {origin}→{destination}, token={'✓' if self.access_token else '✗'}", flush=True)
+        
         if not self.access_token:
+            print(f"🔑 No token, authenticating...", flush=True)
             if not self.authenticate():
+                print(f"❌ Authentication failed", flush=True)
                 return self._get_fallback_flights(origin, destination, travel_class)
+            print(f"✓ Authentication successful", flush=True)
         
         try:
             headers = {'Authorization': f'Bearer {self.access_token}'}
@@ -71,18 +82,23 @@ class FlightAPIClient:
                 'max': 10
             }
             
+            print(f"🌐 Making API request to Amadeus...", flush=True)
             response = requests.get(
                 f'{self.api_url}/shopping/flight-offers',
                 headers=headers,
                 params=params,
                 timeout=10
             )
+            print(f"📡 Response status: {response.status_code}", flush=True)
             
             if response.status_code == 200:
                 data = response.json()
+                print(f"✈️ Amadeus Response: {len(data.get('data', []))} flights found", flush=True)
+                if not data.get('data'):
+                    print(f"⚠️ Amadeus returned 0 flights for {origin}→{destination} on {date}", flush=True)
                 return self._parse_amadeus_response(data)
             else:
-                print(f"API Error: {response.status_code}")
+                print(f"❌ Amadeus API Error: {response.status_code} - {response.text[:200]}", flush=True)
                 return self._get_fallback_flights(origin, destination, travel_class)
                 
         except Exception as e:
@@ -136,6 +152,16 @@ class FlightAPIClient:
         
         # Filter by class
         return [f for f in flights if f['class'].lower() == travel_class.lower()]
+
+# Add get_airport_code method to FlightAPIClient class
+FlightAPIClient.get_airport_code = lambda self, city_name: {
+    'mumbai': 'BOM', 'delhi': 'DEL', 'bangalore': 'BLR', 'bengaluru': 'BLR',
+    'chennai': 'MAA', 'kolkata': 'CCU', 'hyderabad': 'HYD', 'ahmedabad': 'AMD',
+    'pune': 'PNQ', 'kochi': 'COK', 'cochin': 'COK', 'goa': 'GOI', 'jaipur': 'JAI',
+    'lucknow': 'LKO', 'chandigarh': 'IXC', 'thiruvananthapuram': 'TRV',
+    'trivandrum': 'TRV', 'coimbatore': 'CJB', 'dubai': 'DXB', 'singapore': 'SIN',
+    'london': 'LHR', 'new york': 'JFK', 'los angeles': 'LAX', 'paris': 'CDG', 'tokyo': 'NRT'
+}.get(city_name.lower().strip())
 
 # Global instance
 flight_api = FlightAPIClient()

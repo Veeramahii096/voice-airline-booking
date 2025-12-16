@@ -12,16 +12,16 @@ class Config:
     # Flask
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     
-    # API URLs
-    BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:4000')
-    FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+    # API URLs - Using Render URLs for production
+    BACKEND_URL = os.getenv('BACKEND_URL', 'https://voice-airline-backend.onrender.com')
+    FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://voice-airline-booking-2.onrender.com')
     
     # Database - HARDCODED MongoDB for production
     DATABASE_URL = os.getenv('DATABASE_URL', 'mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority')
     
     # Flight API - HARDCODED for production
     AMADEUS_API_KEY = os.getenv('AMADEUS_API_KEY', 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS')
-    AMADEUS_API_SECRET = os.getenv('AMADEUS_API_SECRET', 'XlLMkdQIFtb5x0W4')
+    AMADEUS_API_SECRET = os.getenv('AMADEUS_API_SECRET', 'I8l5uhG8lKFYson0')
     FLIGHT_API_URL = os.getenv('FLIGHT_API_URL', 'https://api.amadeus.com/v2')
     
     # Payment Gateway

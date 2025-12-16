@@ -574,7 +574,8 @@ class ConversationManager:
         # Try to call the flights lookup endpoint (self) to retrieve structured data
         try:
             params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
-            resp = requests.get('http://127.0.0.1:5000/api/flights', params=params, timeout=2)
+            base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
+            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=2)
             if resp.status_code == 200:
                 data = resp.json()
                 flights = data.get('flights', [])
@@ -660,7 +661,8 @@ class ConversationManager:
         # Otherwise call flights endpoint
         try:
             params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
-            resp = requests.get('http://127.0.0.1:5000/api/flights', params=params, timeout=2)
+            base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
+            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=2)
             if resp.status_code == 200:
                 data = resp.json()
                 return data.get('flights', [])
@@ -948,8 +950,11 @@ def flights_lookup():
     if not origin or not destination:
         return jsonify({'error': 'origin and destination are required'}), 400
 
-    # Try to use real Amadeus API if configured
-    if USE_REAL_APIS:
+    # Debug log
+    print(f"🔎 USE_REAL_APIS = {USE_REAL_APIS}, origin={origin}, dest={destination}", flush=True)
+    
+    # Try to use real Amadeus API if configured - FORCE TRUE FOR TESTING
+    if True:  # USE_REAL_APIS:
         try:
             # Get IATA codes
             origin_code = flight_api.get_airport_code(origin)
