@@ -44,3 +44,26 @@ class Config:
 
 # Export config
 config = Config()
+
+# Helper functions for app.py
+def has_amadeus_config():
+    """Check if Amadeus API credentials are configured"""
+    return bool(Config.AMADEUS_API_KEY and Config.AMADEUS_API_SECRET)
+
+def has_mongodb_config():
+    """Check if MongoDB is configured"""
+    return bool(Config.DATABASE_URL)
+
+def validate_config():
+    """Validate configuration on startup"""
+    if has_amadeus_config():
+        print(f"✓ Amadeus API configured: {Config.AMADEUS_API_KEY[:8]}...")
+    else:
+        print("⚠️  Amadeus API not configured - using mock flights")
+    
+    if has_mongodb_config():
+        print(f"✓ MongoDB configured")
+    else:
+        print("⚠️  MongoDB not configured - using in-memory storage")
+    
+    return has_amadeus_config() or has_mongodb_config()
