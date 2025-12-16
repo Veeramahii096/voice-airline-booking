@@ -798,6 +798,26 @@ class ConversationManager:
         }
 
 
+@app.route('/')
+def home():
+    """Root endpoint - API information"""
+    return jsonify({
+        "status": "Voice Airline Booking NLP API is running",
+        "service": "nlp-service",
+        "version": "1.0.0",
+        "endpoints": [
+            {"path": "/", "method": "GET", "description": "API status and information"},
+            {"path": "/health", "method": "GET", "description": "Health check endpoint"},
+            {"path": "/api/nlp/identify", "method": "POST", "description": "Identify user from voice pattern"},
+            {"path": "/api/nlp/process", "method": "POST", "description": "Process voice input and return NLP response"},
+            {"path": "/api/flights", "method": "GET/POST", "description": "Flight lookup endpoint"},
+            {"path": "/api/nlp/save-profile", "method": "POST", "description": "Save or update user profile"},
+            {"path": "/api/nlp/reset", "method": "POST", "description": "Reset conversation session"},
+            {"path": "/api/nlp/status", "method": "GET", "description": "Get current session status"}
+        ]
+    })
+
+
 @app.route('/api/nlp/identify', methods=['POST'])
 def identify_voice():
     """Identify user from voice pattern and return profile"""
