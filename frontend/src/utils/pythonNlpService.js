@@ -84,9 +84,13 @@ export const processVoiceInput = async (userInput) => {
     console.log('Using fallback client-side NLP processing...');
     
     // Fallback to client-side NLP if Python service unavailable
+    // Note: Using 'general' context as we don't have session context available here.
+    // The client-side NLP will infer context from the input itself.
     const fallbackResult = nlpService.processInput(userInput, 'general');
     
     // Transform client-side NLP result to match Python NLP service response format
+    // Note: advance is set based on action type (true if action is actionable, false otherwise)
+    // This enables the conversation to progress when using fallback processing
     return {
       response: fallbackResult.response,
       intent: fallbackResult.intent,
