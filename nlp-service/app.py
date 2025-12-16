@@ -1006,14 +1006,16 @@ def voice_booking():
             ],
             "usage": {
                 "POST": {
-                    "description": "Process voice booking request",
-                    "content_types": ["application/json", "multipart/form-data"],
-                    "parameters": {
-                        "input": "Text transcription of voice input (for JSON requests)",
-                        "audio": "Audio file (for multipart requests)",
-                        "session_id": "Session identifier (optional, will be auto-generated)",
-                        "user_id": "User ID from voice identification (optional)"
-                    }
+                    "description": "Process voice booking request with text input",
+                    "content_types": ["application/json", "application/x-www-form-urlencoded"],
+                    "required_parameters": {
+                        "input": "Text transcription of voice input or user message"
+                    },
+                    "optional_parameters": {
+                        "session_id": "Session identifier (will be auto-generated if not provided)",
+                        "user_id": "User ID from voice identification for profile auto-fill"
+                    },
+                    "note": "Audio file processing not yet implemented. Please provide text transcription in 'input' parameter."
                 }
             }
         })
