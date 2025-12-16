@@ -25,7 +25,13 @@ services:
       - key: AMADEUS_API_KEY
         value: xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS
       - key: AMADEUS_API_SECRET
-        value: XlLMkdQIFtb5x0W4
+        value: I8l5uhG8lKFYson0
+      - key: NLP_SERVICE_URL
+        value: https://voice-airline-nlp-new.onrender.com
+      - key: BACKEND_URL
+        value: https://voice-airline-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://voice-airline-booking-2.onrender.com
       - key: MONGODB_URL
         value: mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority
 
