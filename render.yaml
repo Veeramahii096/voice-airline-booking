@@ -18,10 +18,16 @@ services:
     region: oregon
     plan: free
     buildCommand: cd nlp-service && pip install -r requirements.txt
-    startCommand: cd nlp-service && python app.py
+    startCommand: cd nlp-service && gunicorn --bind 0.0.0.0:$PORT --workers 2 app:app
     envVars:
       - key: FLASK_ENV
         value: production
+      - key: AMADEUS_API_KEY
+        sync: false
+      - key: AMADEUS_API_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
 
   # Frontend Service
   - type: web
