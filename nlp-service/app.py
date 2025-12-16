@@ -39,24 +39,16 @@ except ImportError:
 
 app = Flask(__name__)
 
-# IMPORTANT: Update CORS origins for production deployment
-# Allow all Render URLs with wildcard for easy deployment
-ALLOWED_ORIGINS = [
-    'https://voice-airline-booking-1.onrender.com',
-    'https://voice-airline-booking-2.onrender.com',
-    'https://voice-airline-frontend.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost'
-]
-
-# Enable CORS with permissive configuration for production
+# CORS Configuration - Allow all origins for now (restrict in production)
+# Using wildcard to allow any Render deployment URL
 CORS(app, 
-     resources={r"/*": {"origins": ALLOWED_ORIGINS}},
-     supports_credentials=True,
-     allow_headers=['Content-Type', 'Authorization', 'Accept'],
-     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-     expose_headers=['Content-Type'])
+     resources={r"/api/*": {
+         "origins": "*",
+         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+         "allow_headers": ["Content-Type", "Authorization", "Accept"],
+         "expose_headers": ["Content-Type"],
+         "supports_credentials": False
+     }})
 
 # Conversation sessions storage
 sessions = {}
