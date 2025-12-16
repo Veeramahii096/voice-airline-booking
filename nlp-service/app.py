@@ -812,6 +812,7 @@ def home():
             {"path": "/api/nlp/process", "methods": ["POST"], "description": "Process voice input and return NLP response"},
             {"path": "/api/flights", "methods": ["GET", "POST"], "description": "Flight lookup endpoint"},
             {"path": "/api/nlp/save-profile", "methods": ["POST"], "description": "Save or update user profile"},
+            {"path": "/api/nlp/profile/<user_id>", "methods": ["GET"], "description": "Get user profile by ID"},
             {"path": "/api/nlp/reset", "methods": ["POST"], "description": "Reset conversation session"},
             {"path": "/api/nlp/status", "methods": ["GET"], "description": "Get current session status"}
         ]
