@@ -1020,40 +1020,30 @@ def voice_booking():
     
     # POST request - process booking
     try:
-        session_id = None
-        user_input = None
-        user_id = None
+        # Helper function to generate session ID
+        def _get_session_id():
+            return f"session_{datetime.now().timestamp()}"
         
-        # Handle JSON request
+        # Extract request data from JSON or form
         if request.is_json:
             data = request.json
             user_input = data.get('input', '')
-            session_id = data.get('session_id', f"session_{datetime.now().timestamp()}")
+            session_id = data.get('session_id', _get_session_id())
             user_id = data.get('user_id', None)
-        
-        # Handle multipart/form-data (audio file upload)
-        elif request.files:
-            # In a production environment, you would:
-            # 1. Accept the audio file
-            # 2. Convert speech to text using a service like Google Speech-to-Text
-            # 3. Process the transcribed text
+        else:
+            # Handle both form data and multipart requests
             audio_file = request.files.get('audio')
             user_input = request.form.get('input', '')
-            session_id = request.form.get('session_id', f"session_{datetime.now().timestamp()}")
+            session_id = request.form.get('session_id', _get_session_id())
             user_id = request.form.get('user_id', None)
             
+            # Check if audio file provided without transcription
             if audio_file and not user_input:
                 return jsonify({
                     "status": "error",
                     "message": "Audio processing not yet implemented. Please provide 'input' parameter with text transcription.",
                     "note": "In production, this would use speech-to-text service"
                 }), 501
-        
-        # Handle form data
-        else:
-            user_input = request.form.get('input', '')
-            session_id = request.form.get('session_id', f"session_{datetime.now().timestamp()}")
-            user_id = request.form.get('user_id', None)
         
         if not user_input:
             return jsonify({
@@ -1073,11 +1063,7 @@ def voice_booking():
         result['session_id'] = session_id
         result['context'] = conversation.get_current_step()
         
-        return jsonify({
-            "status": "success",
-            "booking_active": True,
-            "data": result
-        })
+        return jsonify(result)
     
     except Exception as e:
         return jsonify({
