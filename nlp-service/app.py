@@ -808,6 +808,7 @@ def home():
         "endpoints": [
             {"path": "/", "methods": ["GET"], "description": "API status and information"},
             {"path": "/health", "methods": ["GET"], "description": "Health check endpoint"},
+            {"path": "/voice-booking", "methods": ["GET", "POST"], "description": "Voice booking endpoint - handles voice-based flight booking"},
             {"path": "/api/nlp/identify", "methods": ["POST"], "description": "Identify user from voice pattern"},
             {"path": "/api/nlp/process", "methods": ["POST"], "description": "Process voice input and return NLP response"},
             {"path": "/api/flights", "methods": ["GET", "POST"], "description": "Flight lookup endpoint"},
@@ -981,6 +982,108 @@ def get_status():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'service': 'nlp-service', 'sessions': len(sessions)})
+
+
+@app.route('/voice-booking', methods=['GET', 'POST'])
+def voice_booking():
+    """
+    Voice booking endpoint - Handles voice-based flight booking requests
+    Supports both GET (status check) and POST (booking process)
+    """
+    if request.method == 'GET':
+        # Return endpoint information and status
+        return jsonify({
+            "status": "ready",
+            "message": "Voice booking endpoint is live",
+            "service": "voice-airline-booking",
+            "version": "1.0.0",
+            "capabilities": [
+                "Voice input processing",
+                "NLP-based booking",
+                "User identification",
+                "Smart auto-fill",
+                "Complete booking flow"
+            ],
+            "usage": {
+                "POST": {
+                    "description": "Process voice booking request",
+                    "content_types": ["application/json", "multipart/form-data"],
+                    "parameters": {
+                        "input": "Text transcription of voice input (for JSON requests)",
+                        "audio": "Audio file (for multipart requests)",
+                        "session_id": "Session identifier (optional, will be auto-generated)",
+                        "user_id": "User ID from voice identification (optional)"
+                    }
+                }
+            }
+        })
+    
+    # POST request - process booking
+    try:
+        session_id = None
+        user_input = None
+        user_id = None
+        
+        # Handle JSON request
+        if request.is_json:
+            data = request.json
+            user_input = data.get('input', '')
+            session_id = data.get('session_id', f"session_{datetime.now().timestamp()}")
+            user_id = data.get('user_id', None)
+        
+        # Handle multipart/form-data (audio file upload)
+        elif request.files:
+            # In a production environment, you would:
+            # 1. Accept the audio file
+            # 2. Convert speech to text using a service like Google Speech-to-Text
+            # 3. Process the transcribed text
+            audio_file = request.files.get('audio')
+            user_input = request.form.get('input', '')
+            session_id = request.form.get('session_id', f"session_{datetime.now().timestamp()}")
+            user_id = request.form.get('user_id', None)
+            
+            if audio_file and not user_input:
+                return jsonify({
+                    "status": "error",
+                    "message": "Audio processing not yet implemented. Please provide 'input' parameter with text transcription.",
+                    "note": "In production, this would use speech-to-text service"
+                }), 501
+        
+        # Handle form data
+        else:
+            user_input = request.form.get('input', '')
+            session_id = request.form.get('session_id', f"session_{datetime.now().timestamp()}")
+            user_id = request.form.get('user_id', None)
+        
+        if not user_input:
+            return jsonify({
+                "status": "error",
+                "message": "No input provided. Please provide 'input' parameter with voice transcription or text."
+            }), 400
+        
+        # Get user profile if identified
+        user_profile = USER_PROFILES.get(user_id) if user_id else None
+        
+        # Get or create session with user profile
+        if session_id not in sessions:
+            sessions[session_id] = ConversationManager(session_id, user_profile)
+        
+        conversation = sessions[session_id]
+        result = conversation.process_input(user_input)
+        result['session_id'] = session_id
+        result['context'] = conversation.get_current_step()
+        
+        return jsonify({
+            "status": "success",
+            "booking_active": True,
+            "data": result
+        })
+    
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Error processing voice booking: {str(e)}"
+        }), 500
 
 
 if __name__ == '__main__':
