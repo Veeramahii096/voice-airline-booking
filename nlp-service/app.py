@@ -23,6 +23,7 @@ try:
     USE_REAL_APIS = has_amadeus_config()
     USE_DATABASE = has_mongodb_config()
     USE_REAL_NLP = nlp_engine.nlp is not None
+    print(f"🔧 NLP Configuration: USE_REAL_NLP={USE_REAL_NLP}, USE_REAL_APIS={USE_REAL_APIS}", flush=True)
 except ImportError as e:
     print(f"⚠️  Could not import production modules: {e}")
     USE_REAL_APIS = False
@@ -226,7 +227,25 @@ class ConversationManager:
                 if self.context['voice_identified']:
                     return {'response': f"Hello {self.context['passenger_name']}! Ready to book your flight? Just say where and when.", 'intent': 'greeting_identified', 'advance': False, 'auto_listen': True}
                 return {'response': self.steps[0]['prompt'], 'intent': 'greeting', 'advance': False, 'auto_listen': True}
-            elif self._match_intent(user_input, ['start', 'begin', 'book', 'booking']):
+            elif self._match_intent(user_input, ['start', 'begin', 'book', 'booking', 'flight', 'fly']):
+                print(f"🎯 Matched booking intent! USE_REAL_NLP={USE_REAL_NLP}", flush=True)
+                # Try to extract full booking details from input
+                if USE_REAL_NLP:
+                    flight_details = nlp_engine.extract_flight_details(user_input)
+                    print(f"📍 Extracted: {flight_details}", flush=True)
+                    if flight_details.get('origin') and flight_details.get('destination'):
+                        # Complete booking info in one sentence!
+                        self.context['origin'] = flight_details['origin'].title()
+                        self.context['destination'] = flight_details['destination'].title()
+                        if flight_details.get('date'):
+                            self.context['travel_date'] = flight_details['date']
+                            self.context['step'] = 4  # Skip to class selection
+                            return {'response': f"Great! Flying from {self.context['origin']} to {self.context['destination']} on {flight_details['date']}. " + self.steps[4]['prompt'], 'intent': 'complete_booking_info', 'advance': True, 'auto_listen': True}
+                        else:
+                            self.context['step'] = 3  # Skip to date
+                            return {'response': f"Flying from {self.context['origin']} to {self.context['destination']}. " + self.steps[3]['prompt'], 'intent': 'partial_booking_info', 'advance': True, 'auto_listen': True}
+                
+                # Default: start from origin
                 self.context['step'] = 1
                 return {'response': self.steps[1]['prompt'], 'intent': 'start_booking', 'advance': True, 'auto_listen': True}
             return {'response': self.steps[0]['prompt'], 'intent': 'unknown', 'advance': False, 'auto_listen': True}
@@ -494,19 +513,22 @@ class ConversationManager:
         """Check if user input matches any keyword using NLP or regex"""
         if USE_REAL_NLP:
             intent = nlp_engine.classify_intent(user_input)
+            print(f"🔍 _match_intent: intent={intent}, keywords={keywords}", flush=True)
             # Map NLP intent to keyword groups
             intent_mapping = {
                 'confirm': ['yes', 'confirm', 'okay', 'proceed'],
                 'reject': ['no', 'cancel', 'stop'],
-                'greeting': ['hello', 'hi', 'hey'],
-                'start_booking': ['start', 'book', 'booking'],
+                'greeting': ['hello', 'hi', 'hey', 'good'],
+                'start_booking': ['start', 'book', 'booking', 'flight', 'fly', 'begin'],
                 'cancel_booking': ['cancel', 'stop', 'exit', 'quit']
             }
             for nlp_intent, intent_keywords in intent_mapping.items():
                 if intent == nlp_intent and any(kw in keywords for kw in intent_keywords):
+                    print(f"✅ Matched! nlp_intent={nlp_intent}, overlap={[k for k in intent_keywords if k in keywords]}", flush=True)
                     return True
         
         # Fallback to simple keyword matching
+        print(f"⚠️ Fallback match check...", flush=True)
         return any(keyword in user_input for keyword in keywords)
     
     def _extract_city(self, user_input):
@@ -1009,8 +1031,8 @@ def flights_lookup():
 def process_voice_input():
     """Process voice input and return NLP response - with voice identification"""
     data = request.json
-    user_input = data.get('input', '')
-    session_id = data.get('session_id', 'default')
+    user_input = data.get('input', data.get('text', ''))  # Accept both 'input' and 'text'
+    session_id = data.get('session_id', data.get('sessionId', 'default'))  # Accept both 'session_id' and 'sessionId'
     user_id = data.get('user_id', None)  # From voice identification
     
     # Get user profile from database if available, otherwise use in-memory

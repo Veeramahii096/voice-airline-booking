@@ -197,29 +197,11 @@ const VoiceBooking = () => {
     }
   }, [error, listeningEnabled, isProcessing]);
 
-  // Watchdog: Ensure listening is active when it should be
+  // Watchdog: Ensure listening is active when it should be - DISABLED to prevent conflicts
+  // The speakAndWait function handles starting listening after speech
   useEffect(() => {
-    if (listeningEnabled && !isListening && !isProcessing && currentScreen !== 'confirmation' && audioEnabled) {
-      // Check if bot is currently speaking
-      if (window.speechSynthesis.speaking) {
-        console.log('🔇 Bot is speaking, not starting listening yet');
-        return;
-      }
-      
-      console.log('🐕 WATCHDOG: Should be listening but not active - restarting...');
-      const watchdogTimer = setTimeout(() => {
-        if (listeningEnabled && !isListening && !isProcessing && audioEnabled) {
-          console.log('🔄 WATCHDOG: Force restarting listening...');
-          try {
-            startListening();
-          } catch (e) {
-            console.error('Watchdog restart failed:', e);
-          }
-        }
-      }, 2000);
-      
-      return () => clearTimeout(watchdogTimer);
-    }
+    // Watchdog disabled - listening is managed by speakAndWait
+    return () => {};
   }, [listeningEnabled, isListening, isProcessing, currentScreen, audioEnabled]);
 
   const speakAndWait = async (text, delay = 5000) => {
@@ -329,14 +311,28 @@ const VoiceBooking = () => {
           const startListeningNow = () => {
             console.log('🎤 Starting to listen NOW...');
             console.log('📊 Before start: isListening=' + isListening + ', listeningEnabled=' + listeningEnabled);
-            resetTranscript();
-            setListeningEnabled(true);
-            try {
-              startListening();
-              console.log('✅ startListening() called');
-            } catch (e) {
-              console.error('❌ Failed to start listening:', e);
+            
+            // Force stop first to ensure clean restart
+            if (isListening) {
+              console.log('🔄 Forcing stop before restart...');
+              try {
+                stopListening();
+              } catch (e) {
+                console.log('Stop failed (ok):', e.message);
+              }
             }
+            
+            // Small delay to ensure stop completes
+            setTimeout(() => {
+              resetTranscript();
+              setListeningEnabled(true);
+              try {
+                startListening();
+                console.log('✅ startListening() called');
+              } catch (e) {
+                console.error('❌ Failed to start listening:', e);
+              }
+            }, 100);
           };
           
           checkSpeakingDone();

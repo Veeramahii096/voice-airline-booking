@@ -51,11 +51,15 @@ class NLPEngine:
     def classify_intent(self, text):
         """Classify user intent from text"""
         text_lower = text.lower()
+        print(f"🔍 classify_intent: text='{text}', text_lower='{text_lower}'", flush=True)
         
         # Booking intents
-        if any(word in text_lower for word in ['book', 'booking', 'flight', 'ticket', 'reserve']):
+        booking_match = any(word in text_lower for word in ['book', 'booking', 'flight', 'ticket', 'reserve'])
+        print(f"  booking_match={booking_match}", flush=True)
+        if booking_match:
             if any(word in text_lower for word in ['cancel', 'stop', 'exit', 'no']):
                 return 'cancel_booking'
+            print(f"  → Returning 'start_booking'", flush=True)
             return 'start_booking'
         
         # Confirmation intents
