@@ -119,15 +119,6 @@ const Welcome = () => {
         <div className="action-buttons">
           <button
             className="btn btn-primary btn-large btn-voice-highlight"
-            onClick={() => navigate('/chat-booking')}
-            aria-label="Start chat-style voice booking with popup confirmations"
-            autoFocus
-          >
-            💬 Chat-Style Voice Booking (New!)
-          </button>
-
-          <button
-            className="btn btn-primary btn-large btn-voice-highlight"
             onClick={handleVoiceBooking}
             aria-label="Start complete voice-controlled booking flow"
           >

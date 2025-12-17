@@ -836,14 +836,26 @@ const VoiceBooking = () => {
         )}
       </div>
 
-      {/* Conversation History (Hidden for screen readers, visible for sighted users) */}
-      <div className="conversation-log" aria-hidden="true">
-        {conversationHistory.slice(-4).map((msg, index) => (
-          <div key={index} className={`msg ${msg.type}`}>
-            <span className="icon">{msg.type === 'bot' ? '🤖' : '👤'}</span>
-            <span className="text">{msg.text}</span>
-          </div>
-        ))}
+      {/* Chat-style Conversation History */}
+      <div className="chat-container" aria-hidden="true">
+        <div className="chat-messages">
+          {conversationHistory.map((msg, index) => (
+            <div key={index} className={`chat-message ${msg.type === 'bot' ? 'bot-message' : 'user-message'}`}>
+              <div className="message-avatar">
+                {msg.type === 'bot' ? '🤖' : '👤'}
+              </div>
+              <div className="message-bubble">
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isListening && interimTranscript && (
+            <div className="chat-message user-message interim">
+              <div className="message-avatar">👤</div>
+              <div className="message-bubble">{interimTranscript}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Accessibility Info */}
