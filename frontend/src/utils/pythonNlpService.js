@@ -4,7 +4,7 @@
  */
 
 // Use environment variable if available (production), otherwise use production default
-const NLP_API_BASE = import.meta.env.VITE_NLP_URL || 'https://voice-airline-nlp-new.onrender.com/api/nlp';
+const NLP_API_BASE =  'https://voice-airline-nlp-new.onrender.com/api/nlp';
 
 // Generate unique session ID
 const getSessionId = () => {
