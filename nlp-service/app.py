@@ -603,18 +603,27 @@ class ConversationManager:
         
         # DIRECT AMADEUS CALL - Skip HTTP self-call to avoid timeout issues
         flights = []
+        print(f"🔧 USE_REAL_APIS = {USE_REAL_APIS}", flush=True)
         if USE_REAL_APIS:
             try:
+                print(f"🏙️ Looking up airport codes for {self.context['origin']} and {self.context['destination']}", flush=True)
                 origin_code = flight_api.get_airport_code(self.context['origin'])
                 dest_code = flight_api.get_airport_code(self.context['destination'])
+                print(f"✈️ Airport codes: {origin_code} → {dest_code}", flush=True)
                 
                 if origin_code and dest_code:
                     search_date = self.context.get('travel_date') or (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
-                    print(f"🔍 Direct Amadeus call: {origin_code} → {dest_code} on {search_date}", flush=True)
+                    print(f"🔍 Direct Amadeus call: {origin_code} → {dest_code} on {search_date}, class={self.context['class_preference'].upper()}", flush=True)
                     flights = flight_api.search_flights(origin_code, dest_code, search_date, travel_class=self.context['class_preference'].upper())
                     print(f"✈️ Got {len(flights)} flights from Amadeus", flush=True)
+                else:
+                    print(f"❌ Failed to get airport codes: origin={origin_code}, dest={dest_code}", flush=True)
             except Exception as e:
+                import traceback
                 print(f"❌ Direct Amadeus call failed: {e}", flush=True)
+                print(f"Traceback: {traceback.format_exc()}", flush=True)
+        else:
+            print(f"⚠️ USE_REAL_APIS is False, skipping Amadeus", flush=True)
         
         # Try HTTP call as fallback
         if not flights:
