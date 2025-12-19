@@ -600,15 +600,36 @@ class ConversationManager:
     def _get_available_flights(self):
         """Get flight options based on route - with full details like Singapore Airlines"""
         route = f"{self.context['origin'].lower()}-{self.context['destination'].lower()}"
-        # Try to call the flights lookup endpoint (self) to retrieve structured data
-        try:
-            params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
-            base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
-            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                flights = data.get('flights', [])
-                if flights:
+        
+        # DIRECT AMADEUS CALL - Skip HTTP self-call to avoid timeout issues
+        flights = []
+        if USE_REAL_APIS:
+            try:
+                origin_code = flight_api.get_airport_code(self.context['origin'])
+                dest_code = flight_api.get_airport_code(self.context['destination'])
+                
+                if origin_code and dest_code:
+                    search_date = self.context.get('travel_date') or (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                    print(f"🔍 Direct Amadeus call: {origin_code} → {dest_code} on {search_date}", flush=True)
+                    flights = flight_api.search_flights(origin_code, dest_code, search_date, travel_class=self.context['class_preference'].upper())
+                    print(f"✈️ Got {len(flights)} flights from Amadeus", flush=True)
+            except Exception as e:
+                print(f"❌ Direct Amadeus call failed: {e}", flush=True)
+        
+        # Try HTTP call as fallback
+        if not flights:
+            try:
+                params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
+                base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
+                resp = requests.get(f'{base_url}/api/flights', params=params, timeout=10)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    flights = data.get('flights', [])
+            except Exception as e:
+                print(f'❌ Flight lookup HTTP error: {e}', flush=True)
+        
+        # Build response if we have flights
+        if flights:
                     # Build spoken description from returned flights
                     flight_desc = f"I found {len(flights)} {self.context['class_preference']} flights. "
                     morning = [f for f in flights if 5 <= int(f['time'].split(':')[0]) < 12]
@@ -691,7 +712,7 @@ class ConversationManager:
         try:
             params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
             base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
-            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=2)
+            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
                 return data.get('flights', [])
