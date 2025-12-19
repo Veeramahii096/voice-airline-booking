@@ -630,28 +630,25 @@ class ConversationManager:
         
         # Build response if we have flights
         if flights:
-                    # Build spoken description from returned flights
-                    flight_desc = f"I found {len(flights)} {self.context['class_preference']} flights. "
-                    morning = [f for f in flights if 5 <= int(f['time'].split(':')[0]) < 12]
-                    afternoon = [f for f in flights if 12 <= int(f['time'].split(':')[0]) < 18]
-                    evening = [f for f in flights if int(f['time'].split(':')[0]) >= 18 or int(f['time'].split(':')[0]) < 5]
-                    options = []
-                    if morning:
-                        f = morning[0]
-                        options.append(f"Morning: Flight {f['flight']} at {f['time']}, {f.get('duration','n/a')}, {f.get('aircraft','')}, {f.get('price')} rupees")
-                    if afternoon:
-                        f = afternoon[0]
-                        options.append(f"Afternoon: Flight {f['flight']} at {f['time']}, {f.get('duration','n/a')}, {f.get('aircraft','')}, {f.get('price')} rupees")
-                    if evening:
-                        f = evening[0]
-                        options.append(f"Evening: Flight {f['flight']} at {f['time']}, {f.get('duration','n/a')}, {f.get('aircraft','')}, {f.get('price')} rupees")
-                    flight_desc += ". ".join(options) + ". Which time works for you?"
-                    # Save last lookup in context for later use
-                    self.context['last_flights_lookup'] = flights
-                    return flight_desc
-        except Exception as e:
-            # Fall back to local DB if the HTTP lookup fails
-            print('Flight lookup HTTP error:', e)
+            # Build spoken description from returned flights
+            flight_desc = f"I found {len(flights)} {self.context['class_preference']} flights. "
+            morning = [f for f in flights if 5 <= int(f['time'].split(':')[0]) < 12]
+            afternoon = [f for f in flights if 12 <= int(f['time'].split(':')[0]) < 18]
+            evening = [f for f in flights if int(f['time'].split(':')[0]) >= 18 or int(f['time'].split(':')[0]) < 5]
+            options = []
+            if morning:
+                f = morning[0]
+                options.append(f"Morning: Flight {f['flight']} at {f['time']}, {f.get('duration','n/a')}, {f.get('aircraft','')}, {f.get('price')} rupees")
+            if afternoon:
+                f = afternoon[0]
+                options.append(f"Afternoon: Flight {f['flight']} at {f['time']}, {f.get('duration','n/a')}, {f.get('aircraft','')}, {f.get('price')} rupees")
+            if evening:
+                f = evening[0]
+                options.append(f"Evening: Flight {f['flight']} at {f['time']}, {f.get('duration','n/a')}, {f.get('aircraft','')}, {f.get('price')} rupees")
+            flight_desc += ". ".join(options) + ". Which time works for you?"
+            # Save last lookup in context for later use
+            self.context['last_flights_lookup'] = flights
+            return flight_desc
 
         # Fallback: try local FLIGHTS_DB
         flights = []
