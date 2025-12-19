@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Welcome from './pages/Welcome';
 import VoiceDemo from './pages/VoiceDemo';
-import VoiceBooking from './pages/VoiceBooking';
+import AIVoiceBooking from './pages/AIVoiceBooking';
 import PassengerInfo from './pages/PassengerInfo';
 import SeatSelection from './pages/SeatSelection';
 import SpecialAssistance from './pages/SpecialAssistance';
@@ -17,7 +17,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/demo" element={<VoiceDemo />} />
-          <Route path="/voice-booking" element={<VoiceBooking />} />
+          <Route path="/voice-booking" element={<AIVoiceBooking />} />
           <Route path="/passenger-info" element={<PassengerInfo />} />
           <Route path="/seat-selection" element={<SeatSelection />} />
           <Route path="/special-assistance" element={<SpecialAssistance />} />

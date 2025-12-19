@@ -3,8 +3,8 @@
  * Connects frontend to Python-based conversation manager
  */
 
-// HARDCODED for production deployment
-const NLP_API_BASE = 'https://voice-airline-nlp-new.onrender.com/api/nlp';
+// Use environment variable if available (production), otherwise use production default
+const NLP_API_BASE = import.meta.env.VITE_NLP_URL || 'https://voice-airline-nlp-new.onrender.com/api/nlp';
 
 // Generate unique session ID
 const getSessionId = () => {

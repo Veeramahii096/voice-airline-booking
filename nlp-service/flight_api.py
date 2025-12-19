@@ -133,6 +133,126 @@ class FlightAPIClient:
         
         return flights
     
+    def get_seat_map(
+        self,
+        flight_offer_id: str = None,
+        flight_number: str = None,
+        carrier_code: str = None,
+        departure_date: str = None,
+        origin: str = None,
+        destination: str = None
+    ) -> Dict:
+        """
+        Get real seat map using Amadeus SeatMap API
+        
+        Args:
+            flight_offer_id: Flight offer ID from flight search (preferred)
+            flight_number: Flight number (e.g., '2822')
+            carrier_code: Airline code (e.g., 'AI')
+            departure_date: Date in YYYY-MM-DD format
+            origin: Origin IATA code
+            destination: Destination IATA code
+            
+        Returns:
+            Dict with seat map data including available seats by preference
+        """
+        print(f"🪑 Getting seat map for {carrier_code}{flight_number}...", flush=True)
+        
+        if not self.access_token:
+            print(f"🔑 No token, authenticating...", flush=True)
+            if not self.authenticate():
+                print(f"❌ Authentication failed, using fallback seats", flush=True)
+                return self._get_fallback_seatmap()
+        
+        try:
+            headers = {'Authorization': f'Bearer {self.access_token}'}
+            
+            # Amadeus Seat Map API endpoint
+            url = 'https://test.api.amadeus.com/v1/shopping/seatmaps'
+            
+            # Build request body for flight-orderId method
+            params = {
+                'flight-orderId': flight_offer_id
+            } if flight_offer_id else {
+                'flightNumber': flight_number,
+                'carrierCode': carrier_code,
+                'departureDate': departure_date,
+                'origin': origin,
+                'destination': destination
+            }
+            
+            print(f"🌐 Requesting seat map from Amadeus...", flush=True)
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=10
+            )
+            print(f"📡 Seat map response: {response.status_code}", flush=True)
+            
+            if response.status_code == 200:
+                data = response.json()
+                print(f"✓ Seat map received", flush=True)
+                return self._parse_seatmap_response(data)
+            else:
+                print(f"⚠️ Seat map API returned {response.status_code}: {response.text[:200]}", flush=True)
+                return self._get_fallback_seatmap()
+                
+        except Exception as e:
+            print(f"❌ Seat map error: {e}", flush=True)
+            return self._get_fallback_seatmap()
+    
+    def _parse_seatmap_response(self, data: Dict) -> Dict:
+        """Parse Amadeus seat map response and categorize seats"""
+        available_seats = {
+            'Window': [],
+            'Aisle': [],
+            'Middle': []
+        }
+        
+        try:
+            for seatmap in data.get('data', []):
+                for deck in seatmap.get('decks', []):
+                    for seat in deck.get('seats', []):
+                        if seat.get('travelerPricing', [{}])[0].get('seatAvailabilityStatus') == 'AVAILABLE':
+                            seat_number = seat.get('number', '')
+                            coords = seat.get('coordinates', {})
+                            
+                            # Categorize by seat characteristics
+                            if seat.get('characteristicsCodes'):
+                                codes = seat['characteristicsCodes']
+                                if 'W' in codes or '1' in codes:  # Window seats
+                                    available_seats['Window'].append(seat_number)
+                                elif 'A' in codes or any(c in codes for c in ['9', 'IA']):  # Aisle seats
+                                    available_seats['Aisle'].append(seat_number)
+                                else:
+                                    available_seats['Middle'].append(seat_number)
+                            else:
+                                # Fallback: use seat letter (A/F=Window, C/D=Aisle, B/E=Middle)
+                                if seat_number:
+                                    letter = seat_number[-1]
+                                    if letter in ['A', 'F', 'K']:
+                                        available_seats['Window'].append(seat_number)
+                                    elif letter in ['C', 'D', 'G', 'H']:
+                                        available_seats['Aisle'].append(seat_number)
+                                    else:
+                                        available_seats['Middle'].append(seat_number)
+        except Exception as e:
+            print(f"⚠️ Seat map parsing error: {e}", flush=True)
+        
+        # Log available seats
+        print(f"🪑 Available seats - Window: {len(available_seats['Window'])}, Aisle: {len(available_seats['Aisle'])}, Middle: {len(available_seats['Middle'])}", flush=True)
+        
+        return available_seats
+    
+    def _get_fallback_seatmap(self) -> Dict:
+        """Return sample seat map when API is unavailable"""
+        return {
+            'Window': ['12A', '12F', '13A', '13F', '14A', '14F'],
+            'Aisle': ['12C', '12D', '13C', '13D', '14C', '14D'],
+            'Middle': ['12B', '12E', '13B', '13E', '14B', '14E']
+        }
+    
     def _get_fallback_flights(self, origin: str, destination: str, travel_class: str) -> List[Dict]:
         """Return sample flights when API is unavailable"""
         # Basic fallback with common routes

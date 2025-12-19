@@ -514,6 +514,13 @@ class ConversationManager:
         if USE_REAL_NLP:
             intent = nlp_engine.classify_intent(user_input)
             print(f"🔍 _match_intent: intent={intent}, keywords={keywords}", flush=True)
+            
+            # ⚠️ CRITICAL: Travel class intents (class_economy, class_business) should NEVER match cancel keywords
+            # This prevents "economy" from being treated as cancellation
+            if intent in ['class_economy', 'class_business', 'class_first', 'travel_class']:
+                print(f"✅ Travel class intent detected, NOT matching cancel keywords", flush=True)
+                return False
+            
             # Map NLP intent to keyword groups
             intent_mapping = {
                 'confirm': ['yes', 'confirm', 'okay', 'proceed'],
@@ -597,7 +604,7 @@ class ConversationManager:
         try:
             params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
             base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
-            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=2)
+            resp = requests.get(f'{base_url}/api/flights', params=params, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
                 flights = data.get('flights', [])
@@ -835,9 +842,68 @@ class ConversationManager:
         return None
     
     def _assign_seat(self, preference):
-        """Assign seat number based on preference"""
-        seats = {'Window': '12A', 'Aisle': '12C', 'Middle': '12B'}
-        return seats.get(preference, '12B')
+        """Assign seat number based on preference using real Amadeus Seat Map API"""
+        try:
+            # Get flight details from context
+            selected_flight = self.context.get('selected_flight', {})
+            flight_number = selected_flight.get('flight', '')
+            
+            if not flight_number:
+                print(f"⚠️ No flight selected, using fallback seats", flush=True)
+                return {'Window': '12A', 'Aisle': '12C', 'Middle': '12B'}.get(preference, '12B')
+            
+            # Extract carrier code and flight number
+            carrier_code = ''.join([c for c in flight_number if c.isalpha()])
+            flight_num = ''.join([c for c in flight_number if c.isdigit()])
+            
+            # Get origin, destination, and date from context
+            origin_city = self.context.get('origin', '')
+            destination_city = self.context.get('destination', '')
+            departure_date = self.context.get('travel_date', '')
+            
+            # Map cities to IATA codes
+            origin = flight_api.get_airport_code(origin_city)
+            destination = flight_api.get_airport_code(destination_city)
+            
+            if not all([carrier_code, flight_num, origin, destination, departure_date]):
+                print(f"⚠️ Missing flight details, using fallback", flush=True)
+                return {'Window': '12A', 'Aisle': '12C', 'Middle': '12B'}.get(preference, '12B')
+            
+            print(f"🪑 Getting seat map for {carrier_code}{flight_num} ({origin}→{destination} on {departure_date})", flush=True)
+            
+            # Call Amadeus Seat Map API
+            seat_map = flight_api.get_seat_map(
+                flight_number=flight_num,
+                carrier_code=carrier_code,
+                departure_date=departure_date,
+                origin=origin,
+                destination=destination
+            )
+            
+            # Get available seats for the requested preference
+            available_seats = seat_map.get(preference, [])
+            
+            if available_seats:
+                # Return the first available seat of the requested type
+                assigned_seat = available_seats[0]
+                print(f"✓ Assigned {preference} seat: {assigned_seat}", flush=True)
+                return assigned_seat
+            else:
+                # Fallback if no seats of preferred type available
+                print(f"⚠️ No {preference} seats available, trying alternatives", flush=True)
+                for alt_pref in ['Window', 'Aisle', 'Middle']:
+                    if seat_map.get(alt_pref):
+                        assigned_seat = seat_map[alt_pref][0]
+                        print(f"✓ Assigned alternative {alt_pref} seat: {assigned_seat}", flush=True)
+                        return assigned_seat
+                
+                # Ultimate fallback
+                return {'Window': '12A', 'Aisle': '12C', 'Middle': '12B'}.get(preference, '12B')
+                
+        except Exception as e:
+            print(f"❌ Seat assignment error: {e}", flush=True)
+            # Fallback to hardcoded seats on error
+            return {'Window': '12A', 'Aisle': '12C', 'Middle': '12B'}.get(preference, '12B')
     
     def _extract_meal(self, user_input):
         """Extract meal preference"""
@@ -982,11 +1048,13 @@ def flights_lookup():
             origin_code = flight_api.get_airport_code(origin)
             dest_code = flight_api.get_airport_code(destination)
             
+            print(f"🗺️  IATA Codes: {origin} → {origin_code}, {destination} → {dest_code}", flush=True)
+            
             if origin_code and dest_code:
                 # Use provided date or default to tomorrow
                 search_date = travel_date or (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
                 
-                print(f"🔍 Searching Amadeus: {origin_code} → {dest_code} on {search_date}")
+                print(f"🔍 Searching Amadeus: {origin_code} → {dest_code} on {search_date}", flush=True)
                 flights = flight_api.search_flights(origin_code, dest_code, search_date)
                 
                 if flights:

@@ -44,6 +44,7 @@ const useSpeechRecognition = () => {
       setIsListening(true);
       setError(null);
       setStatus('listening');
+      // Always reset retry counter on start to allow continuous listening
       retryRef.current = 0;
     };
 
@@ -153,8 +154,10 @@ const useSpeechRecognition = () => {
       // Auto-restart if still supposed to be listening and retry limit not reached
       if (isListening) {
         console.log('🔄 Recognition ended but should continue - considering restart...');
-        // If persistent mode, always restart
+        // If persistent mode, always restart (ignore retry limit)
         if (persistentRef.current) {
+          // Reset retry counter in persistent mode to keep going
+          retryRef.current = 0;
           setTimeout(() => {
             if (recognitionRef.current && isListening && !manualRestartRef.current) {
               try {

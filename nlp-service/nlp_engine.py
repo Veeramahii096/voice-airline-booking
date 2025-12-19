@@ -62,12 +62,29 @@ class NLPEngine:
             print(f"  → Returning 'start_booking'", flush=True)
             return 'start_booking'
         
+        # Travel class preference - CHECK BEFORE NEGATION to avoid "economy/economic" being caught as "no"
+        if any(word in text_lower for word in ['economy', 'economic', 'business', 'first class', 'class']):
+            if 'business' in text_lower:
+                return 'class_business'
+            elif any(word in text_lower for word in ['economy', 'economic']):
+                return 'class_economy'
+            elif 'first' in text_lower:
+                return 'class_first'
+            return 'travel_class'
+        
+        # Time preferences - CHECK BEFORE NEGATION to avoid "afternoon/noon" being caught as "no"
+        if any(word in text_lower for word in ['morning', 'afternoon', 'evening', 'night', 'noon']):
+            return 'time_preference'
+        
         # Confirmation intents
         if any(word in text_lower for word in ['yes', 'confirm', 'correct', 'okay', 'ok', 'sure', 'proceed']):
             return 'confirm'
         
-        # Negation intents
-        if any(word in text_lower for word in ['no', 'cancel', 'wrong', 'incorrect', 'change']):
+        # Negation intents - use word boundaries to avoid false matches
+        import re
+        negation_words = ['cancel', 'wrong', 'incorrect', 'change', 'stop', 'exit', 'quit']
+        # Check for standalone "no" with word boundaries (not part of another word)
+        if any(word in text_lower for word in negation_words) or re.search(r'\bno\b', text_lower):
             return 'reject'
         
         # Seat preference
