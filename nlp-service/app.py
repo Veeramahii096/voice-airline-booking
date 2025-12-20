@@ -50,8 +50,21 @@ else:
 # Conversation sessions storage
 sessions = {}
 
+# User profiles file path for persistence
+PROFILE_FILE = os.path.join(os.path.dirname(__file__), 'user_profiles.json')
+
+# Load user profiles from file if exists
+def load_user_profiles():
+    try:
+        if os.path.exists(PROFILE_FILE):
+            with open(PROFILE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f'⚠️ Could not load user profiles: {e}')
+    return {}
+
 # User profiles database (voice ID → user details)
-USER_PROFILES = {
+USER_PROFILES = load_user_profiles() or {
     # Voice pattern hash → User data
     'user_sample_1': {
         'name': 'Raj Kumar',
@@ -616,6 +629,8 @@ class ConversationManager:
                     print(f"🔍 Direct Amadeus call: {origin_code} → {dest_code} on {search_date}, class={self.context['class_preference'].upper()}", flush=True)
                     flights = flight_api.search_flights(origin_code, dest_code, search_date, travel_class=self.context['class_preference'].upper())
                     print(f"✈️ Got {len(flights)} flights from Amadeus", flush=True)
+                    if flights:
+                        print(f"✅ USING REAL AMADEUS DATA - {len(flights)} flights", flush=True)
                 else:
                     print(f"❌ Failed to get airport codes: origin={origin_code}, dest={dest_code}", flush=True)
             except Exception as e:
@@ -623,13 +638,13 @@ class ConversationManager:
                 print(f"❌ Direct Amadeus call failed: {e}", flush=True)
                 print(f"Traceback: {traceback.format_exc()}", flush=True)
         else:
-            print(f"⚠️ USE_REAL_APIS is False, skipping Amadeus", flush=True)
+            print(f"⚠️ USE_REAL_APIS is False, using mock data. Set AMADEUS_API_KEY and AMADEUS_API_SECRET env vars to enable real data.", flush=True)
         
         # Try HTTP call as fallback
         if not flights:
             try:
                 params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
-                base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
+                base_url = os.getenv('NLP_SERVICE_URL', 'https://voice-airline-nlp-new.onrender.com')
                 resp = requests.get(f'{base_url}/api/flights', params=params, timeout=10)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -659,9 +674,10 @@ class ConversationManager:
             self.context['last_flights_lookup'] = flights
             return flight_desc
 
-        # Fallback: try local FLIGHTS_DB
+        # Fallback: try local FLIGHTS_DB (mock data)
         flights = []
         if route in FLIGHTS_DB:
+            print(f"⚠️ USING MOCK DATA from FLIGHTS_DB for route: {route}", flush=True)
             flights = [f for f in FLIGHTS_DB[route] if f['class'] == self.context['class_preference']]
 
         # If no flights, try swapped route (user may say destination/origin in different order)
@@ -717,7 +733,7 @@ class ConversationManager:
         # Otherwise call flights endpoint
         try:
             params = {'origin': self.context['origin'], 'destination': self.context['destination'], 'class': self.context['class_preference'], 'date': self.context.get('travel_date')}
-            base_url = os.getenv('NLP_SERVICE_URL', 'http://127.0.0.1:5000')
+            base_url = os.getenv('NLP_SERVICE_URL', 'https://voice-airline-nlp-new.onrender.com')
             resp = requests.get(f'{base_url}/api/flights', params=params, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
@@ -1267,10 +1283,40 @@ def get_status():
     return jsonify({'active': False})
 
 
+@app.route('/api/config-status', methods=['GET'])
+def config_status():
+    """Check API and configuration status"""
+    status = {
+        'USE_REAL_APIS': USE_REAL_APIS,
+        'USE_DATABASE': USE_DATABASE,
+        'USE_REAL_NLP': USE_REAL_NLP,
+        'amadeus_configured': bool(USE_REAL_APIS),
+        'amadeus_test': 'not_tested'
+    }
+    
+    # Test Amadeus API if configured
+    if USE_REAL_APIS:
+        try:
+            if flight_api.authenticate():
+                status['amadeus_test'] = 'authentication_successful'
+            else:
+                status['amadeus_test'] = 'authentication_failed'
+        except Exception as e:
+            status['amadeus_test'] = f'error: {str(e)}'
+    
+    return jsonify(status)
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({'status': 'healthy', 'service': 'nlp-service', 'sessions': len(sessions)})
+    return jsonify({
+        'status': 'healthy', 
+        'service': 'nlp-service', 
+        'sessions': len(sessions),
+        'real_apis': USE_REAL_APIS,
+        'database': USE_DATABASE
+    })
 
 
 @app.route('/voice-booking', methods=['GET', 'POST'])
