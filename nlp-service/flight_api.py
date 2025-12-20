@@ -9,10 +9,10 @@ from datetime import datetime
 
 class FlightAPIClient:
     def __init__(self):
-        # HARDCODED credentials for production
-        self.api_key = os.getenv('AMADEUS_API_KEY', 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS')
-        self.api_secret = os.getenv('AMADEUS_API_SECRET', 'I8l5uhG8lKFYson0')
-        self.api_url = os.getenv('FLIGHT_API_URL', 'https://test.api.amadeus.com/v2')
+        # HARDCODED credentials for production - Direct assignment
+        self.api_key = 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS'
+        self.api_secret = 'I8l5uhG8lKFYson0'
+        self.api_url = 'https://test.api.amadeus.com/v2'
         self.access_token = None
         
     def authenticate(self):

@@ -19,10 +19,10 @@ class Config:
     # Database - HARDCODED MongoDB for production
     DATABASE_URL = os.getenv('DATABASE_URL', 'mongodb+srv://Veera:bQayM02Aj0vjXuMw@cluster.hivvjdj.mongodb.net/voice_airline?retryWrites=true&w=majority')
     
-    # Flight API - HARDCODED for production
-    AMADEUS_API_KEY = os.getenv('AMADEUS_API_KEY', 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS')
-    AMADEUS_API_SECRET = os.getenv('AMADEUS_API_SECRET', 'I8l5uhG8lKFYson0')
-    FLIGHT_API_URL = os.getenv('FLIGHT_API_URL', 'https://api.amadeus.com/v2')
+    # Flight API - HARDCODED for production - Direct assignment
+    AMADEUS_API_KEY = 'xoNfz9fYJQIyYYckyY3oGp9Tlu0zTPWS'
+    AMADEUS_API_SECRET = 'I8l5uhG8lKFYson0'
+    FLIGHT_API_URL = 'https://api.amadeus.com/v2'
     
     # Payment Gateway
     RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
