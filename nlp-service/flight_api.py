@@ -17,6 +17,10 @@ AIRLINE_NAMES = {
     'I5': 'AirAsia India',
     'QP': 'Akasa Air',
     'SQ': 'Singapore Airlines',
+    'UL': 'SriLankan Airlines',
+    'MH': 'Malaysia Airlines',
+    'TG': 'Thai Airways',
+    'CX': 'Cathay Pacific',
     'EK': 'Emirates',
     'QR': 'Qatar Airways',
     'BA': 'British Airways',
@@ -28,6 +32,9 @@ AIRLINE_NAMES = {
     'AA': 'American Airlines',
     'UA': 'United Airlines',
     'DL': 'Delta Air Lines',
+    '9W': 'Jet Airways',
+    'QZ': 'AirAsia',
+    'FD': 'Thai AirAsia',
 }
 
 def get_airline_name(carrier_code: str) -> str:

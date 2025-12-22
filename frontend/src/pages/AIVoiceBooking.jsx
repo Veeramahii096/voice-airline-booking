@@ -497,7 +497,7 @@ const AIVoiceBooking = () => {
                     <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '16px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(99, 102, 241, 0.3)'}}>
                       <h4 style={{color: '#818cf8', marginBottom: '10px', fontSize: '16px', fontWeight: '700'}}>✈️ Flight Details</h4>
                       <div style={{display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#f3f4f6'}}>
-                        <div><strong style={{color: '#a78bfa'}}>Flight:</strong> {confirmationDetails.selectedFlight.carrier} {confirmationDetails.selectedFlight.flight}</div>
+                        <div><strong style={{color: '#a78bfa'}}>Flight:</strong> {confirmationDetails.selectedFlight.carrier} - {confirmationDetails.selectedFlight.flight}</div>
                         <div><strong style={{color: '#a78bfa'}}>Class:</strong> {confirmationDetails.classPref || confirmationDetails.selectedFlight.class}</div>
                         <div><strong style={{color: '#a78bfa'}}>Date:</strong> {confirmationDetails.travelDate}</div>
                         <div><strong style={{color: '#a78bfa'}}>Time:</strong> {confirmationDetails.selectedFlight.time}</div>
@@ -551,7 +551,7 @@ const AIVoiceBooking = () => {
                     <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '14px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(20, 184, 166, 0.3)'}}>
                       <h4 style={{color: '#5eead4', marginBottom: '10px', fontSize: '15px', fontWeight: '700'}}>🛫 Flight Details</h4>
                       <div style={{display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#f3f4f6'}}>
-                        <div><strong style={{color: '#5eead4'}}>Flight:</strong> {reviewDetails.selectedFlight.carrier} {reviewDetails.selectedFlight.flight}</div>
+                        <div><strong style={{color: '#5eead4'}}>Flight:</strong> {reviewDetails.selectedFlight.carrier} - {reviewDetails.selectedFlight.flight}</div>
                         <div><strong style={{color: '#5eead4'}}>Aircraft:</strong> {reviewDetails.selectedFlight.aircraft || 'N/A'}</div>
                         <div><strong style={{color: '#5eead4'}}>Departure:</strong> {reviewDetails.selectedFlight.time}</div>
                         <div><strong style={{color: '#5eead4'}}>Duration:</strong> {reviewDetails.selectedFlight.duration}</div>
@@ -806,7 +806,7 @@ const AIVoiceBooking = () => {
                 {flightsOptions.map((f, idx) => (
                   <div key={idx} className={`flight-card ${selectedFlightId===f.flight? 'selected pulse':''}`} onClick={() => handleSelectFlight(f)} role="button" tabIndex={0}>
                     <div className="flight-top">
-                      <strong>{f.carrier} {f.flight}</strong>
+                      <strong>{f.carrier} - {f.flight}</strong>
                       <span className="flight-class">{f.class}</span>
                     </div>
                     <div className="flight-body">
