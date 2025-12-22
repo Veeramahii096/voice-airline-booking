@@ -428,173 +428,378 @@ const AIVoiceBooking = () => {
         </div>
       )}
 
-      {/* Conversation area */}
+      {/* Main Content Area - Two Column Layout */}
       {!showStartButton && (
         <>
-          <div className="conversation-area" role="log" aria-live="polite" aria-atomic="false">
-            {conversationHistory.map((entry, index) => (
-              <div 
-                key={index} 
-                className={`message ${entry.speaker}`}
-                role="article"
-                aria-label={`${entry.speaker === 'bot' ? 'Assistant' : 'You'} said: ${entry.message}`}
-              >
-                <div className="message-speaker">
-                  {entry.speaker === 'bot' ? '🤖 Assistant' : '👤 You'}
-                </div>
-                <div className="message-text">{entry.message}</div>
-              </div>
-            ))}
+          <div className="main-content-wrapper" style={{ display: 'flex', gap: '25px', width: '100%', maxWidth: '1400px', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
             
-            {/* Current processing state */}
-            {isProcessing && (
-              <div className="message bot processing">
-                <div className="message-speaker">🤖 Assistant</div>
-                <div className="message-text">
-                  <span className="typing-indicator">●●●</span>
+            {/* Left Column - Conversation */}
+            <div className="left-column" style={{ flex: '1 1 65%', minWidth: 0 }}>
+              <div className="chat-container" role="log" aria-live="polite" aria-atomic="false">
+                <div className="chat-messages">
+                  {conversationHistory.map((entry, index) => (
+                    <div 
+                      key={index} 
+                      className={`chat-message ${entry.speaker === 'bot' ? 'bot-message' : 'user-message'}`}
+                      role="article"
+                      aria-label={`${entry.speaker === 'bot' ? 'Assistant' : 'You'} said: ${entry.message}`}
+                    >
+                      <div className="message-avatar">
+                        {entry.speaker === 'bot' ? '🤖' : '👤'}
+                      </div>
+                      <div className="message-bubble">{entry.message}</div>
+                    </div>
+                  ))}
+                
+                {/* Current processing state */}
+                {isProcessing && (
+                  <div className="chat-message bot-message processing">
+                    <div className="message-avatar">🤖</div>
+                    <div className="message-bubble">
+                      <span className="typing-indicator">●●●</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Current input */}
+                {isListening && (interimTranscript || transcript) && (
+                  <div className="chat-message user-message interim">
+                    <div className="message-avatar">👤</div>
+                    <div className="message-bubble">{interimTranscript || transcript}</div>
+                  </div>
+                )}
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Current input */}
-            {isListening && (interimTranscript || transcript) && (
-              <div className="message user interim">
-                <div className="message-speaker">👤 You</div>
-                <div className="message-text">{interimTranscript || transcript}</div>
-              </div>
+            {/* Right Column - Booking Summary/Review/Confirmation Sidebar */}
+            {(confirmationDetails || reviewDetails || Object.keys(bookingData).length > 0) && (
+              <div className="right-column" style={{ flex: '0 0 400px', position: 'sticky', top: '20px', alignSelf: 'flex-start' }}>
+              
+              {/* Booking Confirmation Card - Shows after booking complete */}
+              {confirmationDetails && (
+                <div className="confirmation-card" role="region" aria-label="Booking Confirmation" style={{
+                  padding: '24px',
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(20, 184, 166, 0.2) 100%)',
+                  borderRadius: '20px',
+                  border: '2px solid rgba(16, 185, 129, 0.4)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  backdropFilter: 'blur(20px)'
+                }}>
+                  <div style={{textAlign: 'center', marginBottom: '20px'}}>
+                    <div style={{fontSize: '48px', marginBottom: '10px'}}>✅</div>
+                    <h2 style={{color: '#10b981', margin: '0', fontSize: '24px', fontWeight: 'bold'}}>Booking Confirmed!</h2>
+                    <p style={{color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '5px'}}>Booking ID: {confirmationDetails.bookingId}</p>
+                  </div>
+                  
+                  {/* Flight Details */}
+                  {confirmationDetails.selectedFlight && (
+                    <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '16px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(99, 102, 241, 0.3)'}}>
+                      <h4 style={{color: '#818cf8', marginBottom: '10px', fontSize: '16px', fontWeight: '700'}}>✈️ Flight Details</h4>
+                      <div style={{display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#f3f4f6'}}>
+                        <div><strong style={{color: '#a78bfa'}}>Flight:</strong> {confirmationDetails.selectedFlight.carrier} {confirmationDetails.selectedFlight.flight}</div>
+                        <div><strong style={{color: '#a78bfa'}}>Class:</strong> {confirmationDetails.classPref || confirmationDetails.selectedFlight.class}</div>
+                        <div><strong style={{color: '#a78bfa'}}>Date:</strong> {confirmationDetails.travelDate}</div>
+                        <div><strong style={{color: '#a78bfa'}}>Time:</strong> {confirmationDetails.selectedFlight.time}</div>
+                        <div><strong style={{color: '#a78bfa'}}>Duration:</strong> {confirmationDetails.selectedFlight.duration}</div>
+                        <div><strong style={{color: '#a78bfa'}}>Aircraft:</strong> {confirmationDetails.selectedFlight.aircraft}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Passenger Details */}
+                  <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '16px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(245, 158, 11, 0.3)'}}>
+                    <h4 style={{color: '#fbbf24', marginBottom: '10px', fontSize: '16px', fontWeight: '700'}}>👤 Passenger Info</h4>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#f3f4f6'}}>
+                      <div><strong style={{color: '#fbbf24'}}>Name:</strong> {confirmationDetails.passengerName}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Passengers:</strong> {confirmationDetails.passengers}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Email:</strong> {confirmationDetails.email}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Phone:</strong> {confirmationDetails.phone}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Seat:</strong> {confirmationDetails.seat}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Meal:</strong> {confirmationDetails.meal}</div>
+                      {confirmationDetails.assistance && <div><strong style={{color: '#fbbf24'}}>Assistance:</strong> {confirmationDetails.assistance}</div>}
+                    </div>
+                  </div>
+                  
+                  {/* Total Amount */}
+                  <div style={{backgroundColor: 'rgba(16, 185, 129, 0.25)', padding: '16px', borderRadius: '12px', textAlign: 'center', border: '2px solid rgba(16, 185, 129, 0.5)', marginBottom: '12px'}}>
+                    <h4 style={{color: '#10b981', marginBottom: '8px', fontSize: '15px', fontWeight: '700'}}>💰 Total Fare</h4>
+                    <div style={{fontSize: '32px', fontWeight: 'bold', color: '#10b981'}}>₹{confirmationDetails.totalAmount ? confirmationDetails.totalAmount.toLocaleString() : 'N/A'}</div>
+                  </div>
+                  
+                  {/* Redirect Message */}
+                  <div style={{padding: '12px', backgroundColor: 'rgba(99, 102, 241, 0.15)', borderRadius: '10px', textAlign: 'center', border: '1px dashed rgba(99, 102, 241, 0.4)'}}>
+                    <p style={{margin: '0', fontSize: '13px', color: '#a78bfa', fontWeight: '600'}}>📄 Redirecting to confirmation page...</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Booking Review Card - Visual display only, no buttons */}
+              {!confirmationDetails && reviewDetails && (
+                <div className="booking-review-card" role="region" aria-label="Booking Review" style={{
+                  padding: '24px',
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)',
+                  borderRadius: '20px',
+                  border: '2px solid rgba(99, 102, 241, 0.4)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  backdropFilter: 'blur(20px)'
+                }}>
+                  <h3 style={{color: '#a78bfa', marginBottom: '18px', fontSize: '20px', textAlign: 'center', fontWeight: '700'}}>✈️ Booking Review</h3>
+                  
+                  {/* Flight Details */}
+                  {reviewDetails.selectedFlight && (
+                    <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '14px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(20, 184, 166, 0.3)'}}>
+                      <h4 style={{color: '#5eead4', marginBottom: '10px', fontSize: '15px', fontWeight: '700'}}>🛫 Flight Details</h4>
+                      <div style={{display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#f3f4f6'}}>
+                        <div><strong style={{color: '#5eead4'}}>Flight:</strong> {reviewDetails.selectedFlight.carrier} {reviewDetails.selectedFlight.flight}</div>
+                        <div><strong style={{color: '#5eead4'}}>Aircraft:</strong> {reviewDetails.selectedFlight.aircraft || 'N/A'}</div>
+                        <div><strong style={{color: '#5eead4'}}>Departure:</strong> {reviewDetails.selectedFlight.time}</div>
+                        <div><strong style={{color: '#5eead4'}}>Duration:</strong> {reviewDetails.selectedFlight.duration}</div>
+                        <div><strong style={{color: '#5eead4'}}>Class:</strong> {reviewDetails.classPref}</div>
+                        <div><strong style={{color: '#5eead4'}}>Date:</strong> {reviewDetails.travelDate}</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Passenger Details */}
+                  <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '14px', borderRadius: '12px', marginBottom: '12px', border: '1px solid rgba(245, 158, 11, 0.3)'}}>
+                    <h4 style={{color: '#fbbf24', marginBottom: '10px', fontSize: '15px', fontWeight: '700'}}>👤 Passenger Info</h4>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', color: '#f3f4f6'}}>
+                      <div><strong style={{color: '#fbbf24'}}>Name:</strong> {reviewDetails.passengerName}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Passengers:</strong> {reviewDetails.passengers}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Email:</strong> {reviewDetails.email}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Phone:</strong> {reviewDetails.phone}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Seat:</strong> {reviewDetails.seat}</div>
+                      <div><strong style={{color: '#fbbf24'}}>Meal:</strong> {reviewDetails.meal}</div>
+                    </div>
+                  </div>
+                  
+                  {/* Total Amount */}
+                  <div style={{backgroundColor: 'rgba(16, 185, 129, 0.2)', padding: '14px', borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.4)', marginBottom: '12px'}}>
+                    <h4 style={{color: '#34d399', marginBottom: '8px', fontSize: '15px', fontWeight: '700'}}>💰 Total Fare</h4>
+                    <div style={{fontSize: '28px', fontWeight: 'bold', color: '#34d399'}}>₹{reviewDetails.totalAmount ? reviewDetails.totalAmount.toLocaleString() : 'N/A'}</div>
+                  </div>
+                  
+                  {/* Voice Instructions */}
+                  <div style={{padding: '14px', backgroundColor: 'rgba(99, 102, 241, 0.15)', borderRadius: '12px', textAlign: 'center', border: '1px dashed rgba(99, 102, 241, 0.4)'}}>
+                    <p style={{margin: '5px 0', fontSize: '14px', color: '#e5e7eb'}}>🎤 Say <strong style={{color: '#a78bfa'}}>"confirm"</strong> to proceed</p>
+                    <p style={{margin: '5px 0', fontSize: '14px', color: '#e5e7eb'}}>🎤 Say <strong style={{color: '#f87171'}}>"change"</strong> to modify</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Booking Summary - Shows collected information */}
+              {!reviewDetails && !confirmationDetails && Object.keys(bookingData).length > 0 && (
+                <div className="booking-summary-sidebar" role="region" aria-label="Collected booking information" style={{
+                  padding: '24px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  backdropFilter: 'blur(20px)',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+                }}>
+                  <h3 style={{
+                    color: '#a78bfa',
+                    marginBottom: '20px',
+                    fontSize: '20px',
+                    fontWeight: '700',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}>
+                    📋 Booking Info
+                  </h3>
+                  
+                  <div className="sidebar-data" style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14px' }}>
+                    {bookingData.origin && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#a78bfa', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>From</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.origin}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.destination && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#a78bfa', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>To</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.destination}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.date && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#34d399', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Date</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.date}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.passengers && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#34d399', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Passengers</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.passengers}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.class && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Class</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.class}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.flight_time && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#fbbf24', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Time</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.flight_time}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.name && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#818cf8', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Name</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.name}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.email && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#818cf8', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.email}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.phone && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#f87171', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Phone</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.phone}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.seat && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#f87171', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seat</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.seat}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.meal && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(20, 184, 166, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(20, 184, 166, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#5eead4', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Meal</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.meal}</span>
+                      </div>
+                    )}
+                    
+                    {bookingData.assistance && (
+                      <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: 'rgba(20, 184, 166, 0.2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(20, 184, 166, 0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <strong style={{ color: '#5eead4', display: 'block', marginBottom: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Assistance</strong>
+                        <span style={{ fontSize: '15px', fontWeight: '600', color: '#f3f4f6' }}>{bookingData.assistance}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isIdentified && (
+                    <div className="identified-badge" style={{
+                      marginTop: '16px',
+                      padding: '12px 16px',
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(20, 184, 166, 0.25) 100%)',
+                      borderRadius: '10px',
+                      textAlign: 'center',
+                      color: '#34d399',
+                      fontWeight: 'bold',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontSize: '14px'
+                    }}>
+                      ✅ User Identified - Auto-filled
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             )}
           </div>
 
-          {/* Booking Confirmation Card - Shows after booking complete */}
-          {confirmationDetails && (
-            <div className="confirmation-card" role="region" aria-label="Booking Confirmation" style={{margin: '20px 0', padding: '25px', background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(26, 188, 156, 0.2) 100%)', borderRadius: '15px', border: '2px solid rgba(46, 204, 113, 0.4)', boxShadow: '0 8px 25px rgba(0,0,0,0.2)'}}>
-              <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                <div style={{fontSize: '48px', marginBottom: '10px'}}>✅</div>
-                <h2 style={{color: '#2ecc71', margin: '0', fontSize: '28px', fontWeight: 'bold'}}>Booking Confirmed!</h2>
-                <p style={{color: '#95a5a6', fontSize: '14px', marginTop: '5px'}}>Booking ID: {confirmationDetails.bookingId}</p>
-              </div>
-              
-              {/* Flight Details */}
-              {confirmationDetails.selectedFlight && (
-                <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '18px', borderRadius: '10px', marginBottom: '15px', border: '1px solid rgba(52, 152, 219, 0.2)'}}>
-                  <h4 style={{color: '#3498db', marginBottom: '12px', fontSize: '18px'}}>✈️ Flight Details</h4>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '15px'}}>
-                    <div><strong style={{color: '#3498db'}}>Flight:</strong> {confirmationDetails.selectedFlight.carrier} {confirmationDetails.selectedFlight.flight}</div>
-                    <div><strong style={{color: '#3498db'}}>Class:</strong> {confirmationDetails.classPref || confirmationDetails.selectedFlight.class}</div>
-                    <div><strong style={{color: '#3498db'}}>Date:</strong> {confirmationDetails.travelDate}</div>
-                    <div><strong style={{color: '#3498db'}}>Time:</strong> {confirmationDetails.selectedFlight.time}</div>
-                    <div><strong style={{color: '#3498db'}}>Duration:</strong> {confirmationDetails.selectedFlight.duration}</div>
-                    <div><strong style={{color: '#3498db'}}>Aircraft:</strong> {confirmationDetails.selectedFlight.aircraft}</div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Passenger Details */}
-              <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '18px', borderRadius: '10px', marginBottom: '15px', border: '1px solid rgba(230, 126, 34, 0.2)'}}>
-                <h4 style={{color: '#e67e22', marginBottom: '12px', fontSize: '18px'}}>👤 Passenger Information</h4>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '15px'}}>
-                  <div><strong style={{color: '#e67e22'}}>Name:</strong> {confirmationDetails.passengerName}</div>
-                  <div><strong style={{color: '#e67e22'}}>Passengers:</strong> {confirmationDetails.passengers}</div>
-                  <div><strong style={{color: '#e67e22'}}>Email:</strong> {confirmationDetails.email}</div>
-                  <div><strong style={{color: '#e67e22'}}>Phone:</strong> {confirmationDetails.phone}</div>
-                  <div><strong style={{color: '#e67e22'}}>Seat:</strong> {confirmationDetails.seat}</div>
-                  <div><strong style={{color: '#e67e22'}}>Meal:</strong> {confirmationDetails.meal}</div>
-                  {confirmationDetails.assistance && <div style={{gridColumn: '1 / -1'}}><strong style={{color: '#e67e22'}}>Assistance:</strong> {confirmationDetails.assistance}</div>}
-                </div>
-              </div>
-              
-              {/* Total Amount */}
-              <div style={{backgroundColor: 'rgba(46, 204, 113, 0.25)', padding: '20px', borderRadius: '10px', textAlign: 'center', border: '2px solid rgba(46, 204, 113, 0.4)'}}>
-                <h4 style={{color: '#2ecc71', marginBottom: '10px', fontSize: '18px'}}>💰 Total Fare</h4>
-                <div style={{fontSize: '36px', fontWeight: 'bold', color: '#2ecc71'}}>₹{confirmationDetails.totalAmount ? confirmationDetails.totalAmount.toLocaleString() : 'N/A'}</div>
-              </div>
-              
-              {/* Redirect Message */}
-              <div style={{marginTop: '20px', padding: '15px', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderRadius: '8px', textAlign: 'center', border: '1px dashed rgba(52, 152, 219, 0.3)'}}>
-                <p style={{margin: '0', fontSize: '16px', color: '#3498db', fontWeight: 'bold'}}>📄 Redirecting to confirmation page...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Booking Review Card - Visual display only, no buttons */}
-          {!confirmationDetails && reviewDetails && (
-            <div className="booking-review-card" style={{margin: '20px 0', padding: '25px', background: 'linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, rgba(155, 89, 182, 0.15) 100%)', borderRadius: '12px', border: '2px solid rgba(52, 152, 219, 0.3)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)'}}>
-              <h3 style={{color: '#3498db', marginBottom: '20px', fontSize: '24px', textAlign: 'center'}}>✈️ Booking Review</h3>
-              
-              {/* Flight Details */}
-              {reviewDetails.selectedFlight && (
-                <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '15px', borderRadius: '8px', marginBottom: '15px'}}>
-                  <h4 style={{color: '#2ecc71', marginBottom: '10px'}}>🛫 Flight Details</h4>
-                  <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '15px'}}>
-                    <div><strong>Flight:</strong> {reviewDetails.selectedFlight.carrier} {reviewDetails.selectedFlight.flight}</div>
-                    <div><strong>Aircraft:</strong> {reviewDetails.selectedFlight.aircraft || 'N/A'}</div>
-                    <div><strong>Departure:</strong> {reviewDetails.selectedFlight.time}</div>
-                    <div><strong>Duration:</strong> {reviewDetails.selectedFlight.duration}</div>
-                    <div><strong>Class:</strong> {reviewDetails.classPref}</div>
-                    <div><strong>Date:</strong> {reviewDetails.travelDate}</div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Passenger Details */}
-              <div style={{backgroundColor: 'rgba(255,255,255,0.08)', padding: '15px', borderRadius: '8px', marginBottom: '15px'}}>
-                <h4 style={{color: '#e67e22', marginBottom: '10px'}}>👤 Passenger Information</h4>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '15px'}}>
-                  <div><strong>Name:</strong> {reviewDetails.passengerName}</div>
-                  <div><strong>Passengers:</strong> {reviewDetails.passengers}</div>
-                  <div><strong>Email:</strong> {reviewDetails.email}</div>
-                  <div><strong>Phone:</strong> {reviewDetails.phone}</div>
-                  <div><strong>Seat:</strong> {reviewDetails.seat}</div>
-                  <div><strong>Meal:</strong> {reviewDetails.meal}</div>
-                </div>
-              </div>
-              
-              {/* Total Amount */}
-              <div style={{backgroundColor: 'rgba(46, 204, 113, 0.15)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
-                <h4 style={{color: '#2ecc71', marginBottom: '8px'}}>💰 Total Fare</h4>
-                <div style={{fontSize: '28px', fontWeight: 'bold', color: '#2ecc71'}}>₹{reviewDetails.totalAmount ? reviewDetails.totalAmount.toLocaleString() : 'N/A'}</div>
-              </div>
-              
-              {/* Voice Instructions */}
-              <div style={{marginTop: '20px', padding: '15px', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderRadius: '8px', textAlign: 'center', border: '1px dashed rgba(52, 152, 219, 0.3)'}}>
-                <p style={{margin: '5px 0', fontSize: '16px', color: '#ecf0f1'}}>🎤 Say <strong style={{color: '#3498db'}}>"confirm"</strong> to proceed</p>
-                <p style={{margin: '5px 0', fontSize: '16px', color: '#ecf0f1'}}>🎤 Say <strong style={{color: '#e74c3c'}}>"change"</strong> to modify</p>
-              </div>
-            </div>
-          )}
-
-          {/* Booking data display */}
-          {!reviewDetails && Object.keys(bookingData).length > 0 && (
-            <div className="booking-summary" role="region" aria-label="Collected booking information" style={{margin: '20px 0', padding: '20px', background: 'linear-gradient(135deg, rgba(52, 152, 219, 0.12) 0%, rgba(155, 89, 182, 0.12) 100%)', borderRadius: '12px', border: '1px solid rgba(52, 152, 219, 0.3)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'}}>
-              <h3 style={{color: '#3498db', marginBottom: '15px', fontSize: '20px'}}>📋 Collected Information</h3>
-              <div className="data-grid" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '15px', color: '#ecf0f1'}}>
-                {bookingData.origin && <div style={{padding: '10px', backgroundColor: 'rgba(52, 152, 219, 0.15)', borderRadius: '6px'}}><strong style={{color: '#3498db'}}>From:</strong> {bookingData.origin}</div>}
-                {bookingData.destination && <div style={{padding: '10px', backgroundColor: 'rgba(52, 152, 219, 0.15)', borderRadius: '6px'}}><strong style={{color: '#3498db'}}>To:</strong> {bookingData.destination}</div>}
-                {bookingData.date && <div style={{padding: '10px', backgroundColor: 'rgba(46, 204, 113, 0.15)', borderRadius: '6px'}}><strong style={{color: '#2ecc71'}}>Date:</strong> {bookingData.date}</div>}
-                {bookingData.passengers && <div style={{padding: '10px', backgroundColor: 'rgba(46, 204, 113, 0.15)', borderRadius: '6px'}}><strong style={{color: '#2ecc71'}}>Passengers:</strong> {bookingData.passengers}</div>}
-                {bookingData.class && <div style={{padding: '10px', backgroundColor: 'rgba(241, 196, 15, 0.15)', borderRadius: '6px'}}><strong style={{color: '#f1c40f'}}>Class:</strong> {bookingData.class}</div>}
-                {bookingData.flight_time && <div style={{padding: '10px', backgroundColor: 'rgba(241, 196, 15, 0.15)', borderRadius: '6px'}}><strong style={{color: '#f1c40f'}}>Time:</strong> {bookingData.flight_time}</div>}
-                {bookingData.name && <div style={{padding: '10px', backgroundColor: 'rgba(155, 89, 182, 0.15)', borderRadius: '6px'}}><strong style={{color: '#9b59b6'}}>Name:</strong> {bookingData.name}</div>}
-                {bookingData.email && <div style={{padding: '10px', backgroundColor: 'rgba(155, 89, 182, 0.15)', borderRadius: '6px'}}><strong style={{color: '#9b59b6'}}>Email:</strong> {bookingData.email}</div>}
-                {bookingData.phone && <div style={{padding: '10px', backgroundColor: 'rgba(231, 76, 60, 0.15)', borderRadius: '6px'}}><strong style={{color: '#e74c3c'}}>Phone:</strong> {bookingData.phone}</div>}
-                {bookingData.seat && <div style={{padding: '10px', backgroundColor: 'rgba(231, 76, 60, 0.15)', borderRadius: '6px'}}><strong style={{color: '#e74c3c'}}>Seat:</strong> {bookingData.seat}</div>}
-                {bookingData.meal && <div style={{padding: '10px', backgroundColor: 'rgba(26, 188, 156, 0.15)', borderRadius: '6px'}}><strong style={{color: '#1abc9c'}}>Meal:</strong> {bookingData.meal}</div>}
-                {bookingData.assistance && <div style={{padding: '10px', backgroundColor: 'rgba(26, 188, 156, 0.15)', borderRadius: '6px'}}><strong style={{color: '#1abc9c'}}>Assistance:</strong> {bookingData.assistance}</div>}
-              </div>
-              {isIdentified && (
-                <div className="identified-badge" style={{marginTop: '15px', padding: '10px', backgroundColor: 'rgba(46, 204, 113, 0.2)', borderRadius: '6px', textAlign: 'center', color: '#2ecc71', fontWeight: 'bold'}}>✅ User Identified - Auto-filled</div>
-              )}
-            </div>
-          )}
-
           {/* Flight options listing (if available) */}
           {flightsOptions && flightsOptions.length > 0 && (
-            <div className="flight-options" role="region" aria-label="Available flights">
+            <div className="flight-options" role="region" aria-label="Available flights" style={{position: 'relative', zIndex: 1, maxWidth: '1400px', width: '100%'}}>
               <h3>✈️ Available Flights</h3>
               {/* Selection confirmation banner */}
               {selectionConfirmation && (
-                <div className="selection-confirmation" role="status" aria-live="polite" style={{marginBottom: '10px', padding: '10px', backgroundColor: 'rgba(46, 204, 113, 0.08)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: '6px'}}>
-                  <strong>Selected:</strong> {selectionConfirmation}
+                <div className="selection-confirmation" role="status" aria-live="polite" style={{marginBottom: '16px', padding: '16px 20px', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(20, 184, 166, 0.2) 100%)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '12px', color: '#34d399', fontWeight: '600', fontSize: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'}}>
+                  <strong style={{color: '#10b981'}}>✓ Selected:</strong> {selectionConfirmation}
                 </div>
               )}
               <div className="flights-grid">
@@ -617,14 +822,14 @@ const AIVoiceBooking = () => {
           )}
 
           {/* Status indicators - Voice commands only */}
-          <div className="status-bar" style={{ textAlign: 'center', marginTop: '30px', fontSize: '18px' }}>
-            {isListening && <span className="status-indicator listening" style={{ display: 'block', marginBottom: '10px', color: '#2ecc71', fontWeight: 'bold' }}>🎤 Listening...</span>}
-            {isProcessing && <span className="status-indicator processing" style={{ display: 'block', marginBottom: '10px', color: '#f39c12', fontWeight: 'bold' }}>⚙️ Processing...</span>}
-            {error && <span className="status-indicator error" style={{ display: 'block', marginBottom: '10px', color: '#e74c3c', fontWeight: 'bold' }}>⚠️ {error}</span>}
-            <div style={{ marginTop: '20px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px', fontSize: '16px' }}>
-              <p style={{ margin: '5px 0', color: '#ecf0f1' }}>💬 Say <strong>"cancel"</strong> or <strong>"stop"</strong> to end booking</p>
-              <p style={{ margin: '5px 0', color: '#ecf0f1' }}>💬 Say <strong>"go back"</strong> to return to previous step</p>
-              <p style={{ margin: '5px 0', color: '#ecf0f1' }}>💬 Say <strong>"help"</strong> for assistance</p>
+          <div className="status-bar" style={{ textAlign: 'center', marginTop: '30px', fontSize: '18px', maxWidth: '900px', width: '100%', position: 'relative', zIndex: 1 }}>
+            {isListening && <span className="status-indicator listening" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 24px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '20px', color: '#10b981', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.4)' }}>🎤 Listening...</span>}
+            {isProcessing && <span className="status-indicator processing" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 24px', background: 'rgba(245, 158, 11, 0.2)', borderRadius: '20px', color: '#f59e0b', fontWeight: 'bold', border: '1px solid rgba(245, 158, 11, 0.4)' }}>⚙️ Processing...</span>}
+            {error && <span className="status-indicator error" style={{ display: 'inline-block', marginBottom: '15px', padding: '10px 24px', background: 'rgba(239, 68, 68, 0.2)', borderRadius: '20px', color: '#ef4444', fontWeight: 'bold', border: '1px solid rgba(239, 68, 68, 0.4)' }}>⚠️ {error}</span>}
+            <div style={{ marginTop: '25px', padding: '28px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)', borderRadius: '16px', fontSize: '15px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+              <p style={{ margin: '8px 0', color: '#e5e7eb', fontWeight: '500', lineHeight: '1.8' }}>💬 Say <strong style={{ color: '#fbbf24' }}>"cancel"</strong> or <strong style={{ color: '#fbbf24' }}>"stop"</strong> to end booking</p>
+              <p style={{ margin: '8px 0', color: '#e5e7eb', fontWeight: '500', lineHeight: '1.8' }}>💬 Say <strong style={{ color: '#fbbf24' }}>"go back"</strong> to return to previous step</p>
+              <p style={{ margin: '8px 0', color: '#e5e7eb', fontWeight: '500', lineHeight: '1.8' }}>💬 Say <strong style={{ color: '#fbbf24' }}>"help"</strong> for assistance</p>
             </div>
           </div>
         </>
