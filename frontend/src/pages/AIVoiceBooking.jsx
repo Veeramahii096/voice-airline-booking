@@ -209,8 +209,8 @@ const AIVoiceBooking = () => {
       const stepNum = nlpCtx.step || response.current_step;
       if (stepNum === 13 || response.intent === 'review' || (nlpCtx.step_name && nlpCtx.step_name.toLowerCase().includes('review'))) {
         const sel = nlpCtx.selected_flight || response.selected_flight || bookingData.selected_flight || null;
-        const passengers = nlpCtx.passengers || bookingData.passengers || 1;
-        const total = sel && sel.price ? (sel.price * passengers) : (response.total_amount || null);
+        const passengers = nlpCtx.passengers || bookingData.passengers;
+        const total = sel && sel.price && passengers ? (sel.price * passengers) : (response.total_amount || null);
         setReviewDetails({
           selectedFlight: sel,
           passengerName: nlpCtx.passenger_name || bookingData.passenger_name || bookingData.name || '',
@@ -265,8 +265,8 @@ const AIVoiceBooking = () => {
         setReviewDetails(null);
         const collectedData = response.collected_data || nlpCtx || bookingData;
         const sel = collectedData.selected_flight || bookingData.selected_flight || null;
-        const passengers = collectedData.passengers || bookingData.passengers || 1;
-        const total = sel && sel.price ? (sel.price * passengers) : null;
+        const passengers = collectedData.passengers || bookingData.passengers;
+        const total = sel && sel.price && passengers ? (sel.price * passengers) : null;
         
         setConfirmationDetails({
           selectedFlight: sel,

@@ -7,6 +7,33 @@ import requests
 from typing import List, Dict, Optional
 from datetime import datetime
 
+# Airline carrier code to full name mapping
+AIRLINE_NAMES = {
+    'AI': 'Air India',
+    '6E': 'IndiGo',
+    'SG': 'SpiceJet',
+    'UK': 'Vistara',
+    'G8': 'Go First',
+    'I5': 'AirAsia India',
+    'QP': 'Akasa Air',
+    'SQ': 'Singapore Airlines',
+    'EK': 'Emirates',
+    'QR': 'Qatar Airways',
+    'BA': 'British Airways',
+    'LH': 'Lufthansa',
+    'AF': 'Air France',
+    'KL': 'KLM',
+    'TK': 'Turkish Airlines',
+    'EY': 'Etihad Airways',
+    'AA': 'American Airlines',
+    'UA': 'United Airlines',
+    'DL': 'Delta Air Lines',
+}
+
+def get_airline_name(carrier_code: str) -> str:
+    """Convert airline code to full airline name"""
+    return AIRLINE_NAMES.get(carrier_code, carrier_code)
+
 class FlightAPIClient:
     def __init__(self):
         # HARDCODED credentials for production - Direct assignment
@@ -114,10 +141,12 @@ class FlightAPIClient:
                 itinerary = offer['itineraries'][0]
                 segment = itinerary['segments'][0]
                 price = offer['price']
+                carrier_code = segment['carrierCode']
                 
                 flight = {
-                    'flight': segment['carrierCode'] + segment['number'],
-                    'carrier': segment['carrierCode'],
+                    'flight': carrier_code + segment['number'],
+                    'carrier': get_airline_name(carrier_code),
+                    'carrier_code': carrier_code,
                     'time': segment['departure']['at'].split('T')[1][:5],
                     'duration': itinerary['duration'].replace('PT', ''),
                     'price': float(price['total']),
